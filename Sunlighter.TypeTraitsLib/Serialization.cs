@@ -188,12 +188,4 @@ namespace Sunlighter.TypeTraitsLib
 
         public StringBuilder Builder => sb;
     }
-
-    public sealed class ParserStateManager : SerializerStateManager
-    {
-        public ParserStateManager()
-        {
-
-        }
-    }
 }
