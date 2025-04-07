@@ -1785,12 +1785,12 @@ namespace Sunlighter.TypeTraitsLib
     public sealed class UnionTypeTraits<T> : ITypeTraits<T>
     {
         private readonly ImmutableList<IUnionCaseTypeTraits<T>> cases;
-        private readonly ImmutableDictionary<string, int> caseIndexFromName;
+        private readonly ImmutableSortedDictionary<string, int> caseIndexFromName;
 
         public UnionTypeTraits(ImmutableList<IUnionCaseTypeTraits<T>> cases)
         {
             this.cases = cases;
-            ImmutableDictionary<string, int>.Builder index = ImmutableDictionary<string, int>.Empty.ToBuilder();
+            ImmutableSortedDictionary<string, int>.Builder index = ImmutableSortedDictionary<string, int>.Empty.ToBuilder();
             foreach(int i in Enumerable.Range(0, cases.Count))
             {
                 if (index.ContainsKey(cases[i].Name))
