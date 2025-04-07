@@ -7,7 +7,7 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageLicenseExpression>Apache-2.0 OR MIT</PackageLicenseExpression>
     <Authors>Sunlighter</Authors>
-    <Description>Option type for use by other libraries</Description>
+    <Description>Type Traits library</Description>
     <Copyright>Copyright © 2025</Copyright>
     <PackageProjectUrl>https://github.com/Sunlighter/TypeTraitsLib</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
