@@ -1721,18 +1721,24 @@ namespace Sunlighter.TypeTraitsLib
         }
     }
 
-    public interface IUnionCaseTypeTraits<T>
+    public interface IUnionCaseTypeTraits<TTag, T>
+#if !NETSTANDARD2_0
+        where TTag: notnull
+#endif
     {
         bool CanConvert(T a);
         ITypeTraits<T> Traits { get; }
-        string Name { get; }
+        TTag Name { get; }
     }
 
-    public sealed class UnionCaseTypeTraits<T, U> : IUnionCaseTypeTraits<T>
+    public sealed class UnionCaseTypeTraits<TTag, T, U> : IUnionCaseTypeTraits<TTag, T>
+#if !NETSTANDARD2_0
+        where TTag : notnull
+#endif
     {
         private readonly Func<T, bool> canConvert;
 
-        public UnionCaseTypeTraits(string name, Func<T, bool> canConvert, Func<T, U> convert, ITypeTraits<U> itemTraits, Func<U, T> convertBack)
+        public UnionCaseTypeTraits(TTag name, Func<T, bool> canConvert, Func<T, U> convert, ITypeTraits<U> itemTraits, Func<U, T> convertBack)
         {
             this.canConvert = canConvert;
             Traits = new ConvertTypeTraits<T, U>(convert, itemTraits, convertBack);
@@ -1746,12 +1752,15 @@ namespace Sunlighter.TypeTraitsLib
 
         public ITypeTraits<T> Traits { get; }
 
-        public string Name { get; }
+        public TTag Name { get; }
     }
 
-    public sealed class UnionCaseTypeTraits2<T, U> : IUnionCaseTypeTraits<T> where U : T
+    public sealed class UnionCaseTypeTraits2<TTag, T, U> : IUnionCaseTypeTraits<TTag, T> where U : T
+#if !NETSTANDARD2_0
+        where TTag : notnull
+#endif
     {
-        public UnionCaseTypeTraits2(string name, ITypeTraits<U> itemTraits)
+        public UnionCaseTypeTraits2(TTag name, ITypeTraits<U> itemTraits)
         {
             Traits = new ConvertTypeTraits<T, U>
             (
@@ -1779,18 +1788,25 @@ namespace Sunlighter.TypeTraitsLib
 
         public ITypeTraits<T> Traits { get; }
 
-        public string Name { get; }
+        public TTag Name { get; }
     }
 
-    public sealed class UnionTypeTraits<T> : ITypeTraits<T>
+    public sealed class UnionTypeTraits<TTag, T> : ITypeTraits<T>
+#if !NETSTANDARD2_0
+        where TTag : notnull
+#endif
     {
-        private readonly ImmutableList<IUnionCaseTypeTraits<T>> cases;
-        private readonly ImmutableSortedDictionary<string, int> caseIndexFromName;
+        private readonly ITypeTraits<TTag> tagTraits;
+        private readonly Adapter<TTag> tagAdapter;
+        private readonly ImmutableList<IUnionCaseTypeTraits<TTag, T>> cases;
+        private readonly ImmutableSortedDictionary<TTag, int> caseIndexFromName;
 
-        public UnionTypeTraits(ImmutableList<IUnionCaseTypeTraits<T>> cases)
+        public UnionTypeTraits(ITypeTraits<TTag> tagTraits, ImmutableList<IUnionCaseTypeTraits<TTag, T>> cases)
         {
+            this.tagTraits = tagTraits;
+            tagAdapter = Adapter<TTag>.Create(tagTraits);
             this.cases = cases;
-            ImmutableSortedDictionary<string, int>.Builder index = ImmutableSortedDictionary<string, int>.Empty.ToBuilder();
+            ImmutableSortedDictionary<TTag, int>.Builder index = ImmutableSortedDictionary<TTag, int>.Empty.WithComparers(tagAdapter).ToBuilder();
             foreach(int i in Enumerable.Range(0, cases.Count))
             {
                 if (index.ContainsKey(cases[i].Name))
@@ -1852,20 +1868,20 @@ namespace Sunlighter.TypeTraitsLib
             int ca = GetCase(a);
             if (ca < 0) throw new InvalidOperationException("Unrecognized case");
 
-            dest.Writer.Write(cases[ca].Name);
+            tagTraits.Serialize(dest, cases[ca].Name);
             cases[ca].Traits.Serialize(dest, a);
         }
 
         public T Deserialize(Deserializer src)
         {
-            string caseName = src.Reader.ReadString();
+            TTag caseName = tagTraits.Deserialize(src);
             if (caseIndexFromName.TryGetValue(caseName, out int ca))
             {
                 return cases[ca].Traits.Deserialize(src);
             }
             else
             {
-                throw new InvalidOperationException($"Unrecognized case {caseName} in file");
+                throw new InvalidOperationException($"Unrecognized case {tagTraits.ToDebugString(caseName)} in file");
             }
         }
 
@@ -1874,7 +1890,7 @@ namespace Sunlighter.TypeTraitsLib
             int ca = GetCase(a);
             if (ca < 0) throw new InvalidOperationException("Unrecognized case");
 
-            StringTypeTraits.Value.MeasureBytes(measurer, cases[ca].Name);
+            tagTraits.MeasureBytes(measurer, cases[ca].Name);
             cases[ca].Traits.MeasureBytes(measurer, a);
         }
 
@@ -1884,7 +1900,7 @@ namespace Sunlighter.TypeTraitsLib
             if (ca < 0) throw new InvalidOperationException("Unrecognized case");
 
             sb.Builder.Append("(union-case ");
-            sb.Builder.AppendQuoted(cases[ca].Name);
+            tagTraits.AppendDebugString(sb, cases[ca].Name);
             sb.Builder.Append(", ");
             cases[ca].Traits.AppendDebugString(sb, a);
             sb.Builder.Append(')');

@@ -106,11 +106,12 @@ namespace Sunlighter.TypeTraitsLib
             ITypeTraits<Type> t = new GuardedTypeTraits<Type>
             (
                 t0 => !t0.IsByRef && !t0.IsPointer,
-                new UnionTypeTraits<Type>
+                new UnionTypeTraits<string, Type>
                 (
-                    new IUnionCaseTypeTraits<Type>[]
+                    StringTypeTraits.Value,
+                    new IUnionCaseTypeTraits<string, Type>[]
                     {
-                        new UnionCaseTypeTraits<Type, ValueTuple<string, Assembly>>
+                        new UnionCaseTypeTraits<string, Type, ValueTuple<string, Assembly>>
                         (
                             "plainType",
                             t1 => !t1.IsGenericType && !t1.IsArray,
@@ -122,7 +123,7 @@ namespace Sunlighter.TypeTraitsLib
                             ),
                             tu => tu.Item2.GetType(tu.Item1, true).AssertNotNull()
                         ),
-                        new UnionCaseTypeTraits<Type, ValueTuple<string, Assembly, int>>
+                        new UnionCaseTypeTraits<string, Type, ValueTuple<string, Assembly, int>>
                         (
                             "openGeneric",
                             t3 => t3.IsGenericTypeDefinition,
@@ -145,7 +146,7 @@ namespace Sunlighter.TypeTraitsLib
                                 }
                             }
                         ),
-                        new UnionCaseTypeTraits<Type, ValueTuple<string, Assembly, ImmutableList<Type>>>
+                        new UnionCaseTypeTraits<string, Type, ValueTuple<string, Assembly, ImmutableList<Type>>>
                         (
                             "closedGeneric",
                             t5 => t5.IsGenericType && !t5.IsGenericTypeDefinition,
@@ -170,7 +171,7 @@ namespace Sunlighter.TypeTraitsLib
                                 }
                             }
                         ),
-                        new UnionCaseTypeTraits<Type, Type>
+                        new UnionCaseTypeTraits<string, Type, Type>
                         (
                             "array",
                             t7 => t7.IsArray,
