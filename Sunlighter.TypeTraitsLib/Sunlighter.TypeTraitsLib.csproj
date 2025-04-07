@@ -5,10 +5,16 @@
     <RootNamespace>Sunlighter.TypeTraitsLib</RootNamespace>
     <AssemblyName>Sunlighter.TypeTraitsLib</AssemblyName>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Version>1.0.0.0</Version>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <Copyright>Copyright © 2024</Copyright>
+    <PackageLicenseExpression>Apache-2.0 OR MIT</PackageLicenseExpression>
     <Authors>Sunlighter</Authors>
+    <Description>Option type for use by other libraries</Description>
+    <Copyright>Copyright © 2025</Copyright>
+    <PackageProjectUrl>https://github.com/Sunlighter/TypeTraitsLib</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
@@ -16,7 +22,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sunlighter.OptionLib" Version="1.0.0" />
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Sunlighter.OptionLib" Version="1.0.2" />
     <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
   </ItemGroup>
 
