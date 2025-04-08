@@ -3,13 +3,19 @@
 # TypeTraitsLib
 
 This is a type traits library that allows for comparison, hashing, and serialization of a wide variety of C# types,
-including immutable collections.  The central interface is `ITypeTraits<T>`. There are many extension methods,
-singleton classes which implement the traits for various values of `T`, and some classes for tuples and immutable
-collections. There are also classes for union types, record types, and types which might be self-referential (see
-`RecursiveTypeTraits<T>`.) It is also possible to implement `ITypeTraits<T>` directly.
+including immutable collections. These type traits are *composeable*, meaning that you can construct new type traits
+using combinators and primitive type traits. The central interface is `ITypeTraits<T>`. There are many extension
+methods, singleton classes which implement the traits for various values of `T`, and some classes for tuples and
+immutable collections. There are also classes for union types, record types, and types which might be self-referential
+(see `RecursiveTypeTraits<T>`.) It is also possible to implement `ITypeTraits<T>` directly.
+
+If you want to see how they are used, take a look at the Sunlighter/MacroProtocol project (which is a separate project
+on GitHub). The MacroProtocol defines several objects that are meant to be sent back and forth over TCP, and it
+accomplishes this by constructing type traits for the serializable objects. The type traits then provide the
+serialization and deserialization capabilities.
 
 Although generally designed for immutable types, the library also supports `StrongBox<T>` and user-defined mutable box
-types.  Mutable boxes can be used to create circular references, which are serialized correctly but verbosely: the
+types. Mutable boxes can be used to create circular references, which are serialized correctly but verbosely: the
 library may serialize a second copy before detecting a circular reference.
 
 There is also code to send serialized objects as blobs over TCP, and to set up servers and clients.
