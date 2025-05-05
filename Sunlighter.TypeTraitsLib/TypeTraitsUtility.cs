@@ -85,6 +85,10 @@ namespace Sunlighter.TypeTraitsLib
             {
                 return GetTypeName(t.GetElementType().AssertNotNull()) + "[]";
             }
+            else if (t.IsGenericParameter)
+            {
+                return t.Name;
+            }
             else
             {
                 if (commonTypes.Value.ContainsKey(t))
@@ -285,6 +289,88 @@ namespace Sunlighter.TypeTraitsLib
             {
                 return SymbolEscape(name);
             }
+        }
+
+#if NETSTANDARD2_0
+        public static MutableBoxTypeTraits<StrongBox<T>, long, T> GetStrongBoxTraits<T>(ITypeTraits<T> valueTraits)
+        {
+            object syncRoot = new object();
+            System.Runtime.Serialization.ObjectIDGenerator oig = new System.Runtime.Serialization.ObjectIDGenerator();
+            return new MutableBoxTypeTraits<StrongBox<T>, long, T>
+            (
+                box =>
+                {
+                    lock(syncRoot)
+                    {
+                        return oig.GetId(box, out _);
+                    }
+                },
+                box => box.Value,
+                () => new StrongBox<T>(),
+                (box, value) => box.Value = value,
+                Int64TypeTraits.Value,
+                valueTraits
+            );
+        }
+#else
+        public static MutableBoxTypeTraits<StrongBox<T>, long, T> GetStrongBoxTraits<T>(ITypeTraits<T> valueTraits)
+        {
+#if NET9_0_OR_GREATER
+            Lock syncRoot = new Lock();
+#else
+            object syncRoot = new object();
+#endif
+            long nextId = 0L;
+            Dictionary<StrongBox<T>, long> boxToKey = new Dictionary<StrongBox<T>, long>(ReferenceEqualityComparer.Instance);
+
+            return new MutableBoxTypeTraits<StrongBox<T>, long, T>
+            (
+                box =>
+                {
+                    lock (syncRoot)
+                    {
+                        if (boxToKey.TryGetValue(box, out long id))
+                        {
+                            return id;
+                        }
+                        else
+                        {
+                            id = nextId;
+                            ++nextId;
+                            boxToKey.Add(box, id);
+                            return id;
+                        }
+                    }
+                },
+#pragma warning disable CS8603 // Possible null reference return.
+                box => box.Value,
+#pragma warning restore CS8603 // Possible null reference return.
+                () => new StrongBox<T>(),
+                (box, value) => box.Value = value,
+                Int64TypeTraits.Value,
+                valueTraits
+            );
+        }
+#endif
+    }
+
+    [Serializable]
+    public class TypeTraitsException : Exception
+    {
+        public TypeTraitsException() { }
+        public TypeTraitsException(string message) : base(message) { }
+        public TypeTraitsException(string message, Exception inner) : base(message, inner) { }
+
+#if !NETSTANDARD2_0
+        [Obsolete]
+#endif
+        protected TypeTraitsException
+        (
+            System.Runtime.Serialization.SerializationInfo info,
+            System.Runtime.Serialization.StreamingContext context
+        )
+            : base(info, context)
+        {
         }
     }
 }

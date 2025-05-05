@@ -13,7 +13,7 @@ namespace Sunlighter.TypeTraitsLib
 #else
             MethodInfo? m = t.GetMethod(name, flags, Type.DefaultBinder, parameterTypes, null);
 #endif
-            if (m is null) throw new Exception($"Method {TypeTraitsUtility.GetTypeName(t)}.{name}({string.Join(", ", parameterTypes.Select(t2 => TypeTraitsUtility.GetTypeName(t2)))}) not found");
+            if (m is null) throw new RequiredMemberNotFoundException($"Method {TypeTraitsUtility.GetTypeName(t)}.{name}({string.Join(", ", parameterTypes.Select(t2 => TypeTraitsUtility.GetTypeName(t2)))}) not found");
             return m;
         }
 
@@ -24,7 +24,7 @@ namespace Sunlighter.TypeTraitsLib
 #else
             ConstructorInfo? c = t.GetConstructor(parameterTypes);
 #endif
-            if (c is null) throw new Exception($"Constructor {TypeTraitsUtility.GetTypeName(t)}({string.Join(", ", parameterTypes.Select(t2 => TypeTraitsUtility.GetTypeName(t2)))}) not found");
+            if (c is null) throw new RequiredMemberNotFoundException($"Constructor {TypeTraitsUtility.GetTypeName(t)}({string.Join(", ", parameterTypes.Select(t2 => TypeTraitsUtility.GetTypeName(t2)))}) not found");
             return c;
         }
 
@@ -35,7 +35,7 @@ namespace Sunlighter.TypeTraitsLib
 #else
             PropertyInfo? p = t.GetProperty(name, flags);
 #endif
-            if (p is null) throw new Exception($"Property {TypeTraitsUtility.GetTypeName(t)}.{name} not found");
+            if (p is null) throw new RequiredMemberNotFoundException($"Property {TypeTraitsUtility.GetTypeName(t)}.{name} not found");
             return p;
         }
 
@@ -46,7 +46,7 @@ namespace Sunlighter.TypeTraitsLib
 #else
             PropertyInfo? p = t.GetProperty(name, flags, Type.DefaultBinder, propertyType, parameterTypes, null);
 #endif
-            if (p is null) throw new Exception($"Property {TypeTraitsUtility.GetTypeName(t)}.{name}, of type {TypeTraitsUtility.GetTypeName(propertyType)}, with arguments ({string.Join(", ", parameterTypes.Select(TypeTraitsUtility.GetTypeName))}) not found");
+            if (p is null) throw new RequiredMemberNotFoundException($"Property {TypeTraitsUtility.GetTypeName(t)}.{name}, of type {TypeTraitsUtility.GetTypeName(propertyType)}, with arguments ({string.Join(", ", parameterTypes.Select(TypeTraitsUtility.GetTypeName))}) not found");
             return p;
         }
 
@@ -57,8 +57,29 @@ namespace Sunlighter.TypeTraitsLib
 #else
             FieldInfo? f = t.GetField(name, flags);
 #endif
-            if (f is null) throw new Exception($"Field {TypeTraitsUtility.GetTypeName(t)}.{name} not found");
+            if (f is null) throw new RequiredMemberNotFoundException($"Field {TypeTraitsUtility.GetTypeName(t)}.{name} not found");
             return f;
+        }
+    }
+
+
+    [Serializable]
+    public class RequiredMemberNotFoundException : Exception
+    {
+        public RequiredMemberNotFoundException() { }
+        public RequiredMemberNotFoundException(string message) : base(message) { }
+        public RequiredMemberNotFoundException(string message, Exception inner) : base(message, inner) { }
+
+#if !NETSTANDARD2_0
+        [Obsolete]
+#endif
+        protected RequiredMemberNotFoundException
+        (
+            System.Runtime.Serialization.SerializationInfo info,
+            System.Runtime.Serialization.StreamingContext context
+        )
+            : base(info, context)
+        {
         }
     }
 }

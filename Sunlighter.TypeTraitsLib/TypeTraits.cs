@@ -693,7 +693,7 @@ namespace Sunlighter.TypeTraitsLib
 
         private static ITypeTraits<float> GetTypeTraits()
         {
-            return new ConvertTypeTraits<float, int>
+            return new ConvertTypeTraitsDebugOverride<float, int>
             (
 #if NETSTANDARD2_0
                 f => SingleToInt32Bits(f),
@@ -702,10 +702,11 @@ namespace Sunlighter.TypeTraitsLib
 #endif
                 Int32TypeTraits.Value,
 #if NETSTANDARD2_0
-                i => Int32BitsToSingle(i)
+                i => Int32BitsToSingle(i),
 #else
-                i => BitConverter.Int32BitsToSingle(i)
+                i => BitConverter.Int32BitsToSingle(i),
 #endif
+                (sb, f) => sb.Builder.Append(f)
             );
         }
 
@@ -732,11 +733,12 @@ namespace Sunlighter.TypeTraitsLib
 
         private static ITypeTraits<double> GetTypeTraits()
         {
-            return new ConvertTypeTraits<double, long>
+            return new ConvertTypeTraitsDebugOverride<double, long>
             (
                 d => BitConverter.DoubleToInt64Bits(d),
                 Int64TypeTraits.Value,
-                l => BitConverter.Int64BitsToDouble(l)
+                l => BitConverter.Int64BitsToDouble(l),
+                (sb, d) => sb.Builder.Append(d)
             );
         }
 
@@ -2362,7 +2364,7 @@ namespace Sunlighter.TypeTraitsLib
             if (ss.ScheduledKeys.TryGetValue(boxKey, out int id))
             {
                 finalId = id;
-                
+
             }
             else
             {
@@ -2388,68 +2390,12 @@ namespace Sunlighter.TypeTraitsLib
             sb.Builder.Append(')');
         }
 
-#if NETSTANDARD2_0
+        [Obsolete("Moved to TypeTraitsUtility")]
         public static MutableBoxTypeTraits<StrongBox<T>, long, T> GetStrongBoxTraits(ITypeTraits<T> valueTraits)
         {
-            object syncRoot = new object();
-            System.Runtime.Serialization.ObjectIDGenerator oig = new System.Runtime.Serialization.ObjectIDGenerator();
-            return new MutableBoxTypeTraits<StrongBox<T>, long, T>
-            (
-                box =>
-                {
-                    lock(syncRoot)
-                    {
-                        return oig.GetId(box, out _);
-                    }
-                },
-                box => box.Value,
-                () => new StrongBox<T>(),
-                (box, value) => box.Value = value,
-                Int64TypeTraits.Value,
-                valueTraits
-            );
+            return TypeTraitsUtility.GetStrongBoxTraits(valueTraits);
         }
-#else
-        public static MutableBoxTypeTraits<StrongBox<T>, long, T> GetStrongBoxTraits(ITypeTraits<T> valueTraits)
-        {
-#if NET9_0_OR_GREATER
-            Lock syncRoot = new Lock();
-#else
-            object syncRoot = new object();
-#endif
-            long nextId = 0L;
-            Dictionary<StrongBox<T>, long> boxToKey = new Dictionary<StrongBox<T>, long>(ReferenceEqualityComparer.Instance);
-
-            return new MutableBoxTypeTraits<StrongBox<T>, long, T>
-            (
-                box =>
-                {
-                    lock (syncRoot)
-                    {
-                        if (boxToKey.TryGetValue(box, out long id))
-                        {
-                            return id;
-                        }
-                        else
-                        {
-                            id = nextId;
-                            ++nextId;
-                            boxToKey.Add(box, id);
-                            return id;
-                        }
-                    }
-                },
-#pragma warning disable CS8603 // Possible null reference return.
-                box => box.Value,
-#pragma warning restore CS8603 // Possible null reference return.
-                () => new StrongBox<T>(),
-                (box, value) => box.Value = value,
-                Int64TypeTraits.Value,
-                valueTraits
-            );
-        }
-#endif
-        }
+    }
 
     public abstract class AbstractFieldTypeTraits<TRecord, TBuilder>
     {

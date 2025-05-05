@@ -114,7 +114,7 @@ namespace Sunlighter.TypeTraitsLib
                         new UnionCaseTypeTraits<string, Type, ValueTuple<string, Assembly>>
                         (
                             "plainType",
-                            t1 => !t1.IsGenericType && !t1.IsArray,
+                            t1 => !t1.IsGenericType && !t1.IsArray && !t1.IsGenericParameter,
                             t2 => (t2.FullNameNotNull(), t2.Assembly),
                             new ValueTupleTypeTraits<string, Assembly>
                             (
@@ -142,7 +142,7 @@ namespace Sunlighter.TypeTraitsLib
                                 }
                                 catch(InvalidOperationException)
                                 {
-                                    throw new Exception($"Could not find open generic, assembly {tu.Item2.FullName}, name {tu.Item1}, number of args {tu.Item3}");
+                                    throw new TypeTraitsException($"Could not find open generic, assembly {tu.Item2.FullName}, name {tu.Item1}, number of args {tu.Item3}");
                                 }
                             }
                         ),
@@ -167,8 +167,32 @@ namespace Sunlighter.TypeTraitsLib
                                 }
                                 catch(InvalidOperationException)
                                 {
-                                    throw new Exception($"Could not find open generic, assembly {tu.Item2.FullName}, name {tu.Item1}, number of args {tu.Item3.Count}");
+                                    throw new TypeTraitsException($"Could not find open generic, assembly {tu.Item2.FullName}, name {tu.Item1}, number of args {tu.Item3.Count}");
                                 }
+                            }
+                        ),
+                        new UnionCaseTypeTraits<string, Type, ValueTuple<Type, int>>
+                        (
+                            "genericTypeParameter",
+#if NETSTANDARD2_0
+                            t7 => t7.IsGenericParameter && t7.DeclaringMethod == null,
+#else
+                            t7 => t7.IsGenericTypeParameter,
+#endif
+                            t8 => (t8.DeclaringType.AssertNotNull(), t8.GenericParameterPosition),
+                            new ValueTupleTypeTraits<Type, int>
+                            (
+                                recurse,
+                                Int32TypeTraits.Value
+                            ),
+                            tu =>
+                            {
+                                Type[] genericArgs = tu.Item1.GetGenericArguments();
+                                if (tu.Item2 < 0 || tu.Item2 >= genericArgs.Length)
+                                {
+                                    throw new TypeTraitsException($"Invalid generic parameter index {tu.Item2} for type {tu.Item1.FullName}");
+                                }
+                                return genericArgs[tu.Item2];
                             }
                         ),
                         new UnionCaseTypeTraits<string, Type, Type>

@@ -38,7 +38,7 @@ namespace Sunlighter.TypeTraitsLib
             string fullName = t.FullName;
             if (fullName is null)
             {
-                throw new Exception($"Type does not have a FullName");
+                throw new TypeTraitsException($"Type does not have a FullName");
             }
             else
             {
@@ -51,7 +51,7 @@ namespace Sunlighter.TypeTraitsLib
             string fullName = a.FullName;
             if (fullName is null)
             {
-                throw new Exception($"Assembly does not have a FullName");
+                throw new TypeTraitsException($"Assembly does not have a FullName");
             }
             else
             {
@@ -89,7 +89,7 @@ namespace Sunlighter.TypeTraitsLib
             string? fullName = t.FullName;
             if (fullName is null)
             {
-                throw new Exception($"Type {tExpr} does not have a FullName");
+                throw new TypeTraitsException($"Type {tExpr} does not have a FullName");
             }
             else
             {
@@ -102,7 +102,7 @@ namespace Sunlighter.TypeTraitsLib
             string? fullName = a.FullName;
             if (fullName is null)
             {
-                throw new Exception($"Assembly {aExpr} does not have a FullName");
+                throw new TypeTraitsException($"Assembly {aExpr} does not have a FullName");
             }
             else
             {
@@ -110,7 +110,7 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 #endif
-        
+
         public static T LastItem<T>(this ImmutableList<T> items)
         {
             if (items.Count == 0)

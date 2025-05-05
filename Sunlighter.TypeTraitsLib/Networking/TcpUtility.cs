@@ -1,10 +1,7 @@
 ﻿using Sunlighter.OptionLib;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,8 +18,8 @@ namespace Sunlighter.TypeTraitsLib.Networking
     public class SocketObjectStream<TRead, TWrite> : IObjectStream<TRead, TWrite>
     {
         private readonly Socket s;
-        private ITypeTraits<TRead> readTraits;
-        private ITypeTraits<TWrite> writeTraits;
+        private readonly ITypeTraits<TRead> readTraits;
+        private readonly ITypeTraits<TWrite> writeTraits;
 
         public SocketObjectStream
         (
