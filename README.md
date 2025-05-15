@@ -101,6 +101,8 @@ parameter).
 
 The Builder can also construct traits and adapters for tuples and value tuples with up to seven items.
 
+**Note:** Type traits and adapters do not support `null` values.
+
 ## Strong Box Traits
 
 Although generally designed for immutable types, the library also supports `StrongBox<T>` and user-defined mutable box
