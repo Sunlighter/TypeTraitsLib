@@ -35,6 +35,11 @@ namespace Sunlighter.TypeTraitsLib
         public abstract void Add(byte b);
         public abstract void Add(byte[] b);
 
+#if NET6_0_OR_GREATER
+        public abstract void Add(ReadOnlySpan<byte> b);
+#endif
+
+#if !HASHBUILDER_EXT_METHOD
         public virtual void Add(int i)
         {
             Add(BitConverter.GetBytes(i));
@@ -44,6 +49,7 @@ namespace Sunlighter.TypeTraitsLib
         {
             Add(BitConverter.GetBytes(i));
         }
+#endif
     }
 
 #if false
@@ -106,6 +112,18 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+#if NET6_0_OR_GREATER
+        public override void Add(ReadOnlySpan<byte> b)
+        {
+            foreach(byte b1 in b)
+            {
+                currentValue ^= array[b1];
+                currentValue = Mutate(currentValue);
+                array[b1] = random.NextInt32();
+            }
+        }
+#endif
+
         public int Result => currentValue;
     }
 
@@ -117,6 +135,18 @@ namespace Sunlighter.TypeTraitsLib
             r.NextBytes(b);
             return BitConverter.ToInt32(b, 0);
         }
+
+#if HASHBUILDER_EXT_METHOD
+        public static void Add(this HashBuilder hb, int i)
+        {
+            hb.Add(BitConverter.GetBytes(i));
+        }
+
+        public static void Add(this HashBuilder hb, uint i)
+        {
+            hb.Add(BitConverter.GetBytes(i));
+        }
+#endif
     }
 
     public sealed class SHA256HashBuilder : HashBuilder, IDisposable
@@ -138,14 +168,25 @@ namespace Sunlighter.TypeTraitsLib
             ms.Write(b, 0, b.Length);
         }
 
+#if NET6_0_OR_GREATER
+        public override void Add(ReadOnlySpan<byte> b)
+        {
+            ms.Write(b);
+        }
+#endif
+
         public byte[] Result
         {
             get
             {
+#if NET6_0_OR_GREATER
+                return SHA256.HashData(ms.ToArray());
+#else
                 using (SHA256 worker = SHA256.Create())
                 {
                     return worker.ComputeHash(ms.ToArray());
                 }
+#endif
             }
         }
 
