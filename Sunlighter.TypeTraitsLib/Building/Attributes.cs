@@ -61,6 +61,31 @@ namespace Sunlighter.TypeTraitsLib.Building
         public string Name => name;
     }
 
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public sealed class ProvidesOwnTypeTraitsAttribute : Attribute
+    {
+        public ProvidesOwnTypeTraitsAttribute() { }
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public sealed class ProvidesOwnAdapterAttribute : Attribute
+    {
+        public ProvidesOwnAdapterAttribute() { }
+    }
+
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class UseSpecificTraitsAttribute : Attribute
+    {
+        private readonly Type hostingType;
+
+        public UseSpecificTraitsAttribute(Type hostingType)
+        {
+            this.hostingType = hostingType;
+        }
+
+        public Type HostingType => hostingType;
+    }
+
     public abstract class RecordOrUnionInfo
     {
 
@@ -72,19 +97,22 @@ namespace Sunlighter.TypeTraitsLib.Building
         private readonly ImmutableSortedDictionary<string, Type> bindingTypes;
         private readonly ImmutableList<string> constructorBindings;
         private readonly ImmutableSortedDictionary<string, MemberInfo> propertyBindings;
+        private readonly ImmutableSortedDictionary<string, ArtifactKey> specialTypeTraits;
 
         public RecordInfo
         (
             ConstructorInfo constructorInfo,
             ImmutableSortedDictionary<string, Type> bindingTypes,
             ImmutableList<string> constructorBindings,
-            ImmutableSortedDictionary<string, MemberInfo> propertyBindings
+            ImmutableSortedDictionary<string, MemberInfo> propertyBindings,
+            ImmutableSortedDictionary<string, ArtifactKey> specialTypeTraits
         )
         {
             this.constructorInfo = constructorInfo;
             this.bindingTypes = bindingTypes;
             this.constructorBindings = constructorBindings;
             this.propertyBindings = propertyBindings;
+            this.specialTypeTraits = specialTypeTraits;
         }
 
 
@@ -95,6 +123,8 @@ namespace Sunlighter.TypeTraitsLib.Building
         public ImmutableList<string> ConstructorBindings => constructorBindings;
 
         public ImmutableSortedDictionary<string, MemberInfo> PropertyBindings => propertyBindings;
+
+        public ImmutableSortedDictionary<string, ArtifactKey> SpecialTypeTraits => specialTypeTraits;
     }
 
     public sealed class UnionOfDescendantsInfo : RecordOrUnionInfo
@@ -132,14 +162,19 @@ namespace Sunlighter.TypeTraitsLib.Building
             if (!t.IsTupleType()) throw new BuilderException("Tuple expected");
 
             ConstructorInfo ci = t.GetRequiredConstructor(t.GetGenericArguments());
+
             ParameterInfo[] constructorParameters = ci.GetParameters();
+
             ImmutableList<string> constructorBindings = constructorParameters.Select(par => par.Name.AssertNotNull().ToLowerInvariant()).ToImmutableList();
+
             ImmutableSortedDictionary<string, int> nameToIndex = Enumerable.Range(0, constructorParameters.Length)
                 .Select(i => new KeyValuePair<string, int>(constructorBindings[i], i))
                 .ToImmutableSortedDictionary();
+
             ImmutableSortedDictionary<string, Type> bindingTypes = Enumerable.Range(0, constructorParameters.Length)
                 .Select(i => new KeyValuePair<string, Type>(constructorBindings[i], constructorParameters[i].ParameterType))
                 .ToImmutableSortedDictionary();
+
             ImmutableSortedDictionary<string, MemberInfo> propertyBindings = t.GetFields(BindingFlags.Public | BindingFlags.Instance)
                 .Cast<MemberInfo>()
                 .Concat(t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
@@ -153,7 +188,8 @@ namespace Sunlighter.TypeTraitsLib.Building
                 ci,
                 bindingTypes,
                 constructorBindings,
-                propertyBindings
+                propertyBindings,
+                ImmutableSortedDictionary<string, ArtifactKey>.Empty
             );
         }
 
@@ -182,12 +218,11 @@ namespace Sunlighter.TypeTraitsLib.Building
                 }
                 else
                 {
-                    throw new BuilderException($"Type {TypeTraitsUtility.GetTypeName(t)} has more than one constructor with bindings");
+                    throw new BuilderException($"Type {TypeTraitsUtility.GetTypeName(t)} has more than one constructor with bindings (or more than one with no bindings on any of them)");
                 }
             }
             else
             {
-                // TODO: add support for singletons
                 throw new BuilderException($"Type {TypeTraitsUtility.GetTypeName(t)} does not have a constructor");
             }
              
@@ -196,6 +231,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             ImmutableList<string> constructorBindings = ImmutableList<string>.Empty;
 
             ImmutableSortedDictionary<string, int> constructorParameterIndex = ImmutableSortedDictionary<string, int>.Empty;
+            ImmutableSortedDictionary<string, ArtifactKey> specialTypeTraits = ImmutableSortedDictionary<string, ArtifactKey>.Empty;
 
             foreach (int i in Enumerable.Range(0, ciParams.Length))
             {
@@ -227,6 +263,20 @@ namespace Sunlighter.TypeTraitsLib.Building
                 }
                 else
                 {
+                    if (ciParam.IsDefined(typeof(UseSpecificTraitsAttribute)))
+                    {
+                        UseSpecificTraitsAttribute useTraitsAttr = ciParam.GetCustomAttribute<UseSpecificTraitsAttribute>().AssertNotNull();
+                        ArtifactKey ak = ArtifactKey.Create(ArtifactType.SpecialTypeTraits, ciParam.ParameterType, useTraitsAttr.HostingType);
+
+                        if (specialTypeTraits.ContainsKey(bindSymbol))
+                        {
+                            throw new BuilderException($"Constructor for type {TypeTraitsUtility.GetTypeName(t)} has duplicate special type traits on binding symbol {bindSymbol}");
+                        }
+                        else
+                        {
+                            specialTypeTraits = specialTypeTraits.Add(bindSymbol, ak);
+                        }
+                    }
                     constructorParameterIndex = constructorParameterIndex.Add(bindSymbol, i);
                     constructorBindings = constructorBindings.Add(bindSymbol);
                 }
@@ -246,6 +296,20 @@ namespace Sunlighter.TypeTraitsLib.Building
                 else
                 {
                     propertyIndex = propertyIndex.Add(bindSymbol, i);
+                }
+
+                if (properties[i].IsDefined(typeof(UseSpecificTraitsAttribute)))
+                {
+                    UseSpecificTraitsAttribute useTraitsAttr = properties[i].GetCustomAttribute<UseSpecificTraitsAttribute>().AssertNotNull();
+                    ArtifactKey ak = ArtifactKey.Create(ArtifactType.SpecialTypeTraits, properties[i].PropertyType, useTraitsAttr.HostingType);
+                    if (specialTypeTraits.ContainsKey(bindSymbol))
+                    {
+                        throw new BuilderException($"Properties for type {TypeTraitsUtility.GetTypeName(t)} have duplicate special type traits on binding symbol {bindSymbol}");
+                    }
+                    else
+                    {
+                        specialTypeTraits = specialTypeTraits.Add(bindSymbol, ak);
+                    }
                 }
             }
 
@@ -289,7 +353,8 @@ namespace Sunlighter.TypeTraitsLib.Building
                 ci,
                 bindingTypes,
                 constructorBindings,
-                propertyIndex.Map((k, i) => (MemberInfo)properties[i])
+                propertyIndex.Map((k, i) => (MemberInfo)properties[i]),
+                specialTypeTraits
             );
         }
 

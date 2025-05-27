@@ -33,9 +33,16 @@
     <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net7.0'">
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net7.0'">
+    <PackageReference Include="System.Collections.Immutable" Version="9.0.5" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Sunlighter.OptionLib" Version="1.0.2" />
-    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

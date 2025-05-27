@@ -37,6 +37,9 @@ namespace Sunlighter.TypeTraitsLib.Building
 
         private static ImmutableList<Type> TupleTypes => tupleTypes.Value;
 
+        /// <summary>
+        /// Returns true for both Tuple and ValueTuple types, but false otherwise.
+        /// </summary>
         public static bool IsTupleType(this Type t)
         {
             if (!t.IsGenericType) return false;

@@ -17,6 +17,7 @@ namespace Sunlighter.TypeTraitsLib.Building
         TypeTraits,
         Adapter,
         Setter,
+        SpecialTypeTraits,
     }
 
     public abstract class ArtifactKey
@@ -37,6 +38,8 @@ namespace Sunlighter.TypeTraitsLib.Building
             public override Type Type => type;
 
             public override string Field => throw new InvalidOperationException("Artifact type {artifactType} doesn't have a Field property");
+
+            public override Type HostingType => throw new InvalidOperationException("Artifact type {artifactType} doesn't have a HostingType property");
 
             public override string ToString()
             {
@@ -63,9 +66,35 @@ namespace Sunlighter.TypeTraitsLib.Building
 
             public override string Field => field;
 
+            public override Type HostingType => throw new InvalidOperationException("Artifact type {artifactType} doesn't have a HostingType property");
+
             public override string ToString()
             {
                 return $"{artifactType}({TypeTraitsUtility.GetTypeName(type)}, {field})";
+            }
+        }
+
+        private sealed class HostedArtifactKey : ArtifactKey
+        {
+            private readonly ArtifactType artifactType;
+            private readonly Type type;
+            private readonly Type hostingType;
+
+            public HostedArtifactKey(ArtifactType artifactType, Type type, Type hostingType)
+            {
+                this.artifactType = artifactType;
+                this.type = type;
+                this.hostingType = hostingType;
+            }
+
+            public override ArtifactType ArtifactType => artifactType;
+            public override Type Type => type;
+            public override string Field => throw new InvalidOperationException("Artifact type {artifactType} doesn't have a Field property");
+            public override Type HostingType => hostingType;
+
+            public override string ToString()
+            {
+                return $"{artifactType}({TypeTraitsUtility.GetTypeName(type)}, hosted by {TypeTraitsUtility.GetTypeName(hostingType)})";
             }
         }
 
@@ -74,6 +103,10 @@ namespace Sunlighter.TypeTraitsLib.Building
             if (artifactType == ArtifactType.Setter)
             {
                 throw new InvalidOperationException("Setter requires a binding variable");
+            }
+            else if (artifactType == ArtifactType.SpecialTypeTraits)
+            {
+                throw new InvalidOperationException("Special type traits requires a hosting type");
             }
             else
             {
@@ -93,16 +126,37 @@ namespace Sunlighter.TypeTraitsLib.Building
             }
         }
 
+        public static ArtifactKey Create(ArtifactType artifactType, Type type, Type hostingType)
+        {
+            if (artifactType != ArtifactType.SpecialTypeTraits)
+            {
+                throw new InvalidOperationException("Hosting type can only be supplied for a special type traits");
+            }
+            else
+            {
+                return new HostedArtifactKey(artifactType, type, hostingType);
+            }
+        }
+
         public abstract ArtifactType ArtifactType { get; }
 
         public abstract Type Type { get; }
 
         public abstract string Field { get; }
 
+        public abstract Type HostingType { get; }
+
         private static readonly Lazy<ITypeTraits<ArtifactKey>> typeTraits = new Lazy<ITypeTraits<ArtifactKey>>(GetTypeTraits, LazyThreadSafetyMode.ExecutionAndPublication);
 
         private static ITypeTraits<ArtifactKey> GetTypeTraits()
         {
+            ITypeTraits<ArtifactType> artifactTypeTraits = new ConvertTypeTraits<ArtifactType, int>
+            (
+                at => (int)at,
+                Int32TypeTraits.Value,
+                i => (ArtifactType)i
+            );
+
             return new UnionTypeTraits<string, ArtifactKey>
             (
                 StringTypeTraits.Value,
@@ -116,12 +170,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                             a => (a.ArtifactType, a.Type),
                             new ValueTupleTypeTraits<ArtifactType, Type>
                             (
-                                new ConvertTypeTraits<ArtifactType, int>
-                                (
-                                    at => (int)at,
-                                    Int32TypeTraits.Value,
-                                    i => (ArtifactType)i
-                                ),
+                                artifactTypeTraits,
                                 TypeTypeTraits.Value
                             ),
                             vt => new TypeBasedArtifactKey(vt.Item1, vt.Item2)
@@ -138,16 +187,29 @@ namespace Sunlighter.TypeTraitsLib.Building
                             a => (a.ArtifactType, a.Type, a.Field),
                             new ValueTupleTypeTraits<ArtifactType, Type, string>
                             (
-                                new ConvertTypeTraits<ArtifactType, int>
-                                (
-                                    at => (int)at,
-                                    Int32TypeTraits.Value,
-                                    i => (ArtifactType)i
-                                ),
+                                artifactTypeTraits,
                                 TypeTypeTraits.Value,
                                 StringTypeTraits.Value
                             ),
                             vt => new TypeAndFieldBasedArtifactKey(vt.Item1, vt.Item2, vt.Item3)
+                        )
+                    )
+                )
+                .Add
+                (
+                    new UnionCaseTypeTraits2<string, ArtifactKey, HostedArtifactKey>
+                    (
+                        "hosted",
+                        new ConvertTypeTraits<HostedArtifactKey, ValueTuple<ArtifactType, Type, Type>>
+                        (
+                            a => (a.ArtifactType, a.Type, a.HostingType),
+                            new ValueTupleTypeTraits<ArtifactType, Type, Type>
+                            (
+                                artifactTypeTraits,
+                                TypeTypeTraits.Value,
+                                TypeTypeTraits.Value
+                            ),
+                            vt => new HostedArtifactKey(vt.Item1, vt.Item2, vt.Item3)
                         )
                     )
                 )
@@ -291,6 +353,111 @@ namespace Sunlighter.TypeTraitsLib.Building
                 else
                 {
                     throw new NotSupportedException($"Fixup not supported for ArtifactType {key.ArtifactType}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Currently does not support generic classes.
+        /// </summary>
+        private class ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule : IBuildRule<ArtifactKey, object>
+        {
+            private static readonly Lazy<ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule> value =
+                new Lazy<ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule>(() => new ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule(), LazyThreadSafetyMode.ExecutionAndPublication);
+
+            private ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule() { }
+
+            public static ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule Value => value.Value;
+
+            public bool CanBuild(ArtifactKey k) => k.ArtifactType == ArtifactType.TypeTraits && k.Type.GetCustomAttribute<ProvidesOwnTypeTraitsAttribute>() != null;
+
+            public ImmutableSortedSet<ArtifactKey> GetPrerequisites(ArtifactKey k) => ImmutableSortedSet<ArtifactKey>.Empty.WithComparer(ArtifactKey.Adapter);
+
+            public object Build(ArtifactKey k, ImmutableSortedDictionary<ArtifactKey, object> prerequisites)
+            {
+                Type desiredType = typeof(ITypeTraits<>).MakeGenericType(k.Type);
+#if NETSTANDARD2_0
+                MethodInfo getMethod = k.Type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+#else
+                MethodInfo? getMethod = k.Type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+#endif
+                    .Where(pi => pi.Name == "TypeTraits" && pi.CanRead && pi.PropertyType == desiredType)
+                    .Select(pi => pi.GetGetMethod().AssertNotNull())
+                    .FirstOrDefault();
+
+                if (getMethod == null) throw new BuilderException("TypeTraits property not found on type " + TypeTraitsUtility.GetTypeName(k.Type));
+                else
+                {
+                    return getMethod.Invoke(null, null).AssertNotNull();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Currently does not support generic classes.
+        /// </summary>
+        private class ProvidesOwnAdapter_AdapterBuilder_Rule : IBuildRule<ArtifactKey, object>
+        {
+            private static readonly Lazy<ProvidesOwnAdapter_AdapterBuilder_Rule> value =
+                new Lazy<ProvidesOwnAdapter_AdapterBuilder_Rule>(() => new ProvidesOwnAdapter_AdapterBuilder_Rule(), LazyThreadSafetyMode.ExecutionAndPublication);
+
+            private ProvidesOwnAdapter_AdapterBuilder_Rule() { }
+
+            public static ProvidesOwnAdapter_AdapterBuilder_Rule Value => value.Value;
+
+            public bool CanBuild(ArtifactKey k) => k.ArtifactType == ArtifactType.TypeTraits && k.Type.GetCustomAttribute<ProvidesOwnAdapterAttribute>() != null;
+
+            public ImmutableSortedSet<ArtifactKey> GetPrerequisites(ArtifactKey k) => ImmutableSortedSet<ArtifactKey>.Empty.WithComparer(ArtifactKey.Adapter);
+
+            public object Build(ArtifactKey k, ImmutableSortedDictionary<ArtifactKey, object> prerequisites)
+            {
+                Type desiredType = typeof(Adapter<>).MakeGenericType(k.Type);
+#if NETSTANDARD2_0
+                MethodInfo getMethod = k.Type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+#else
+                MethodInfo? getMethod = k.Type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+#endif
+                    .Where(pi => pi.Name == "Adapter" && pi.CanRead && pi.PropertyType == desiredType)
+                    .Select(pi => pi.GetGetMethod().AssertNotNull())
+                    .FirstOrDefault();
+
+                if (getMethod == null) throw new BuilderException("Adapter property not found on type " + TypeTraitsUtility.GetTypeName(k.Type));
+                else
+                {
+                    return getMethod.Invoke(null, null).AssertNotNull();
+                }
+            }
+        }
+
+        private class SpecialTypeTraits_TypeTraitsBuilder_Rule : IBuildRule<ArtifactKey, object>
+        {
+            private static readonly Lazy<SpecialTypeTraits_TypeTraitsBuilder_Rule> value =
+                new Lazy<SpecialTypeTraits_TypeTraitsBuilder_Rule>(() => new SpecialTypeTraits_TypeTraitsBuilder_Rule(), LazyThreadSafetyMode.ExecutionAndPublication);
+
+            private SpecialTypeTraits_TypeTraitsBuilder_Rule() { }
+
+            public static SpecialTypeTraits_TypeTraitsBuilder_Rule Value => value.Value;
+
+            public bool CanBuild(ArtifactKey k) => k.ArtifactType == ArtifactType.SpecialTypeTraits;
+
+            public ImmutableSortedSet<ArtifactKey> GetPrerequisites(ArtifactKey k) => ImmutableSortedSet<ArtifactKey>.Empty.WithComparer(ArtifactKey.Adapter);
+
+            public object Build(ArtifactKey k, ImmutableSortedDictionary<ArtifactKey, object> prerequisites)
+            {
+                Type desiredType = typeof(ITypeTraits<>).MakeGenericType(k.Type);
+#if NETSTANDARD2_0
+                MethodInfo getMethod = k.HostingType.GetProperties(BindingFlags.Public | BindingFlags.Static)
+#else
+                MethodInfo? getMethod = k.HostingType.GetProperties(BindingFlags.Public | BindingFlags.Static)
+#endif
+                    .Where(pi => pi.CanRead && pi.PropertyType == desiredType)
+                    .Select(pi => pi.GetGetMethod().AssertNotNull())
+                    .SingleOrDefault();
+
+                if (getMethod == null) throw new BuilderException($"TypeTraits property (for {TypeTraitsUtility.GetTypeName(k.Type)}) not found on type " + TypeTraitsUtility.GetTypeName(k.HostingType));
+                else
+                {
+                    return getMethod.Invoke(null, null).AssertNotNull();
                 }
             }
         }
@@ -652,6 +819,9 @@ namespace Sunlighter.TypeTraitsLib.Building
         private static ImmutableList<IBuildRule<ArtifactKey, object>> GetArtifactBuildRules()
         {
             return ImmutableList<IBuildRule<ArtifactKey, object>>.Empty
+                .Add(ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule.Value)
+                .Add(ProvidesOwnAdapter_AdapterBuilder_Rule.Value)
+                .Add(SpecialTypeTraits_TypeTraitsBuilder_Rule.Value)
                 .Add(Enum_TypeTraitsBuilder_Rule.Value)
                 .Add(Tuple2_TypeTraitsBuilder_Rule.Value)
                 .Add(ValueTuple2_TypeTraitsBuilder_Rule.Value)
@@ -710,6 +880,8 @@ namespace Sunlighter.TypeTraitsLib.Building
         public object GetTypeTraits(Type t) => GetArtifact(ArtifactKey.Create(ArtifactType.TypeTraits, t));
 
         public ITypeTraits<T> GetTypeTraits<T>() => (ITypeTraits<T>)GetArtifact(ArtifactKey.Create(ArtifactType.TypeTraits, typeof(T)));
+
+        public ITypeTraits<T> GetSpecialTypeTraits<T>(Type hostingType) => (ITypeTraits<T>)GetArtifact(ArtifactKey.Create(ArtifactType.SpecialTypeTraits, typeof(T), hostingType));
 
         /// <summary>
         /// Add a custom ITypeTraits&lt;T&gt; implementation, which will supersede anything that would otherwise be built.

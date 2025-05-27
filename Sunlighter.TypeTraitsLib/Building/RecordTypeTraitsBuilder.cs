@@ -608,7 +608,21 @@ namespace Sunlighter.TypeTraitsLib.Building
                     Option<RecordOrUnionInfo> optInfo = k.Type.TryGetRecordInfo();
                     if (optInfo.HasValue && optInfo.Value is RecordInfo info)
                     {
-                        results = results.Union(info.BindingTypes.Values.Select(t => ArtifactKey.Create(ArtifactType.TypeTraits, t)));
+                        foreach(KeyValuePair<string, Type> kvp in info.BindingTypes)
+                        {
+#if NETSTANDARD2_0
+                            if (info.SpecialTypeTraits.TryGetValue(kvp.Key, out ArtifactKey akSpecial))
+#else
+                            if (info.SpecialTypeTraits.TryGetValue(kvp.Key, out ArtifactKey? akSpecial))
+#endif
+                            {
+                                results = results.Add(akSpecial);
+                            }
+                            else
+                            {
+                                results = results.Add(ArtifactKey.Create(ArtifactType.TypeTraits, kvp.Value));
+                            }
+                        }
                     }
                     else
                     {
@@ -632,7 +646,18 @@ namespace Sunlighter.TypeTraitsLib.Building
 
                 foreach (KeyValuePair<string, Type> kvp in info.BindingTypes)
                 {
-                    typeTraitsDict = typeTraitsDict.Add(kvp.Key, prerequisites[ArtifactKey.Create(ArtifactType.TypeTraits, kvp.Value)]);
+#if NETSTANDARD2_0
+                    if (info.SpecialTypeTraits.TryGetValue(kvp.Key, out ArtifactKey akSpecial))
+#else
+                    if (info.SpecialTypeTraits.TryGetValue(kvp.Key, out ArtifactKey? akSpecial))
+#endif
+                    {
+                        typeTraitsDict = typeTraitsDict.Add(kvp.Key, prerequisites[akSpecial]);
+                    }
+                    else
+                    {
+                        typeTraitsDict = typeTraitsDict.Add(kvp.Key, prerequisites[ArtifactKey.Create(ArtifactType.TypeTraits, kvp.Value)]);
+                    }
                 }
 
                 Type typeTraitsType = typeof(DelegateTypeTraits<>).MakeGenericType(itemType);
