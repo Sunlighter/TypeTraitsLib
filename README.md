@@ -23,9 +23,9 @@ has traits can be used as a key in a dictionary.
 
 The serialization format is &ldquo;just a bunch of bytes&rdquo; and is sensitive to the structure of the data and to
 the names of union cases. (A new union case with a new name can be added without disturbing the deserialization of
-existing union cases.) It is not sensitive to the *names* of classes, though, so it is safe to rename a class or move
-it to another namespace (or assembly). It is also the same regardless of what version of .NET you are using, so it can
-be used to communicate between different versions of .NET.
+existing union cases.) It is not sensitive to the *names* of classes, though (unless the class names are used as union
+case names), so it is safe to rename a class or move it to another namespace (or assembly). It is also the same
+regardless of what version of .NET you are using, so it can be used to communicate between different versions of .NET.
 
 Type traits can also be used to generate &ldquo;debug strings&rdquo; so that the values of complex data structures can
 be easily seen or logged. However, there is no corresponding parser.
@@ -93,11 +93,12 @@ encountered.
 
 A `[UnionOfDescendants]` attribute can be put on an abstract class; this will cause the Builder to create a
 `UnionTypeTraits<T>` instance. All public or nested public classes in the same assembly which inherit from this class
-will be made into union cases. If the abstract class is generic, it is only possible to construct traits for
-&ldquo;closed&rdquo; generics (in other words you must specify types for the generic parameters). The builder ignores
-descendants that cannot be constructed due to constraints. It also ignores descendants that introduce additional
-generic parameters (because those would lead to an open-ended number of union cases, one for each value of the generic
-parameter).
+will be made into union cases. The union case name will be the same as the type name, unless the
+`[UnionCaseName("...")]` attribute is used. If the abstract class is generic, it is only possible to construct traits
+for &ldquo;closed&rdquo; generics (in other words you must specify types for the generic parameters). The builder
+ignores descendants that cannot be constructed due to constraints. It also ignores descendants that introduce
+additional generic parameters (because those would lead to an open-ended number of union cases, one for each value of
+the generic parameter).
 
 The Builder can also construct traits and adapters for tuples and value tuples with up to seven items.
 
