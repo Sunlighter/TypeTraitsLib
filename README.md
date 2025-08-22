@@ -1,9 +1,9 @@
-<!-- -*- coding: utf-8; fill-column: 118 -*- -->
+﻿<!-- -*- coding: utf-8; fill-column: 118 -*- -->
 
 # TypeTraitsLib
 
 **Sunlighter.TypeTraitsLib** is a type traits library that allows for comparison, hashing, and binary serialization of
-a wide variety of C# types, including immutable collections. These type traits are *composeable*, meaning that you can
+a wide variety of C# types, including immutable collections. These type traits are *composable*, meaning that you can
 construct new type traits using combinators and primitive type traits. The central interface is
 `ITypeTraits<T>`. There are many extension methods, singleton classes which implement the traits for various values of
 `T`, and some classes for tuples and immutable collections. There are also classes for union types, record types, and
