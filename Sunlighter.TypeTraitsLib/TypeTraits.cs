@@ -5,7 +5,9 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+#if NETSTANDARD2_0
 using System.Reflection;
+#endif
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
