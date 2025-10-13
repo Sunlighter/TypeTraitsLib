@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using Sunlighter.OptionLib;
 
 namespace Sunlighter.TypeTraitsLib
 {
@@ -22,6 +23,12 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public static Option<byte> TryConvertToByte(BigInteger b)
+        {
+            if (b < byte.MinValue || b > byte.MaxValue) return Option<byte>.None;
+            return Option<byte>.Some((byte)b);
+        }
+
         public static ushort ConvertToUInt16(BigInteger b, OverflowBehavior ob)
         {
             switch (ob)
@@ -37,6 +44,12 @@ namespace Sunlighter.TypeTraitsLib
                     if (b < ushort.MinValue || b > ushort.MaxValue) throw new OverflowException("Value out of range for UInt16");
                     return (ushort)b;
             }
+        }
+
+        public static Option<ushort> TryConvertToUInt16(BigInteger b)
+        {
+            if (b < ushort.MinValue || b > ushort.MaxValue) return Option<ushort>.None;
+            return Option<ushort>.Some((ushort)b);
         }
 
         public static uint ConvertToUInt32(BigInteger b, OverflowBehavior ob)
@@ -56,6 +69,12 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public static Option<uint> TryConvertToUInt32(BigInteger b)
+        {
+            if (b < uint.MinValue || b > uint.MaxValue) return Option<uint>.None;
+            return Option<uint>.Some((uint)b);
+        }
+
         public static ulong ConvertToUInt64(BigInteger b, OverflowBehavior ob)
         {
             switch (ob)
@@ -71,6 +90,12 @@ namespace Sunlighter.TypeTraitsLib
                     if (b < ulong.MinValue || b > ulong.MaxValue) throw new OverflowException("Value out of range for UInt64");
                     return (ulong)b;
             }
+        }
+
+        public static Option<ulong> TryConvertToUInt64(BigInteger b)
+        {
+            if (b < ulong.MinValue || b > ulong.MaxValue) return Option<ulong>.None;
+            return Option<ulong>.Some((ulong)b);
         }
 
         public static sbyte ConvertToSByte(BigInteger b, OverflowBehavior ob)
@@ -91,6 +116,12 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public static Option<sbyte> TryConvertToSByte(BigInteger b)
+        {
+            if (b < sbyte.MinValue || b > sbyte.MaxValue) return Option<sbyte>.None;
+            return Option<sbyte>.Some((sbyte)b);
+        }
+
         public static short ConvertToInt16(BigInteger b, OverflowBehavior ob)
         {
             switch (ob)
@@ -107,6 +138,12 @@ namespace Sunlighter.TypeTraitsLib
                     if (b < short.MinValue || b > short.MaxValue) throw new OverflowException("Value out of range for Int16");
                     return (short)b;
             }
+        }
+
+        public static Option<short> TryConvertToInt16(BigInteger b)
+        {
+            if (b < short.MinValue || b > short.MaxValue) return Option<short>.None;
+            return Option<short>.Some((short)b);
         }
 
         public static int ConvertToInt32(BigInteger b, OverflowBehavior ob)
@@ -127,6 +164,12 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public static Option<int> TryConvertToInt32(BigInteger b)
+        {
+            if (b < int.MinValue || b > int.MaxValue) return Option<int>.None;
+            return Option<int>.Some((int)b);
+        }
+
         public static long ConvertToInt64(BigInteger b, OverflowBehavior ob)
         {
             switch (ob)
@@ -143,6 +186,12 @@ namespace Sunlighter.TypeTraitsLib
                     if (b < long.MinValue || b > long.MaxValue) throw new OverflowException("Value out of range for Int64");
                     return (long)b;
             }
+        }
+
+        public static Option<long> TryConvertToInt64(BigInteger b)
+        {
+            if (b < long.MinValue || b > long.MaxValue) return Option<long>.None;
+            return Option<long>.Some((long)b);
         }
     }
 
