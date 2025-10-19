@@ -12,9 +12,9 @@
     <PackageProjectUrl>https://github.com/Sunlighter/TypeTraitsLib</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <AssemblyVersion>1.2.0</AssemblyVersion>
-    <FileVersion>1.2.0</FileVersion>
-    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.1</AssemblyVersion>
+    <FileVersion>1.2.1</FileVersion>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
