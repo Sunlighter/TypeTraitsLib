@@ -7,7 +7,7 @@ using System.Numerics;
 namespace TypeTraitsTest
 {
     [TestClass]
-    public sealed class Test2
+    public sealed class BuilderWithGenericsTests
     {
         [TestMethod]
         public void TestTryUnify()

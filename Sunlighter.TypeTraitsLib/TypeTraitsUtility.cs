@@ -152,8 +152,12 @@ namespace Sunlighter.TypeTraitsLib
 
             sb.Append('\"');
 
-            foreach (char ch in str)
+            int iEnd = str.Length;
+            int i = 0;
+            while (i < iEnd)
             {
+                char ch = str[i];
+
                 if (symbolChars.ContainsKey(ch))
                 {
                     sb.Append("\\" + symbolChars[ch]);
@@ -162,7 +166,22 @@ namespace Sunlighter.TypeTraitsLib
                 {
                     sb.Append(ch);
                 }
-                else sb.Append("\\x" + ((int)ch).ToString("X") + ";");
+                else
+                {
+                    if (char.IsHighSurrogate(ch) && (i + 1) < iEnd && char.IsLowSurrogate(str[i + 1]))
+                    {
+                        int codepoint = char.ConvertToUtf32(ch, str[i + 1]);
+                        sb.Append("\\x" + codepoint.ToString("X") + ";");
+                        i += 2;
+                        continue;
+                    }
+                    else
+                    {
+                        sb.Append("\\x" + ((int)ch).ToString("X") + ";");
+                    }
+                }
+
+                ++i;
             }
 
             sb.Append('\"');

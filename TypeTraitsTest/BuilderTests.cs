@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace TypeTraitsTest
 {
     [TestClass]
-    public sealed class Test1
+    public sealed class BuilderTests
     {
         [TestMethod]
         public void TestBuilder()
