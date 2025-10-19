@@ -1726,6 +1726,50 @@ namespace Sunlighter.TypeTraitsLib
         }
     }
 
+    public sealed class UnitTypeTraitsNonSingleton<T> : ITypeTraits<T>
+    {
+        private readonly uint hashToken;
+        private readonly Func<T> makeValue;
+
+        public UnitTypeTraitsNonSingleton(uint hashToken, Func<T> makeValue)
+        {
+            this.hashToken = hashToken;
+            this.makeValue = makeValue;
+        }
+
+        public int Compare(T a, T b)
+        {
+            return 0;
+        }
+
+        public void AddToHash(HashBuilder b, T a)
+        {
+            b.Add(hashToken);
+        }
+
+        public bool CanSerialize(T a) => true;
+
+        public void Serialize(Serializer dest, T a)
+        {
+            // do nothing
+        }
+
+        public T Deserialize(Deserializer src)
+        {
+            return makeValue();
+        }
+
+        public void MeasureBytes(ByteMeasurer measurer, T a)
+        {
+            // do nothing
+        }
+
+        public void AppendDebugString(DebugStringBuilder sb, T a)
+        {
+            sb.Builder.Append("--");
+        }
+    }
+
     public interface IUnionCaseTypeTraits<TTag, T>
 #if !NETSTANDARD2_0
         where TTag: notnull
