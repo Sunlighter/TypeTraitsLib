@@ -51,26 +51,26 @@ namespace Sunlighter.TypeTraitsLib.Building
         {
             private readonly ArtifactType artifactType;
             private readonly Type type;
-            private readonly string field;
+            private readonly string theField;
 
             public TypeAndFieldBasedArtifactKey(ArtifactType artifactType, Type type, string field)
             {
                 this.artifactType = artifactType;
                 this.type = type;
-                this.field = field;
+                theField = field;
             }
 
             public override ArtifactType ArtifactType => artifactType;
 
             public override Type Type => type;
 
-            public override string Field => field;
+            public override string Field => theField;
 
             public override Type HostingType => throw new InvalidOperationException("Artifact type {artifactType} doesn't have a HostingType property");
 
             public override string ToString()
             {
-                return $"{artifactType}({TypeTraitsUtility.GetTypeName(type)}, {field})";
+                return $"{artifactType}({TypeTraitsUtility.GetTypeName(type)}, {theField})";
             }
         }
 
@@ -181,7 +181,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 (
                     new UnionCaseTypeTraits2<string, ArtifactKey, TypeAndFieldBasedArtifactKey>
                     (
-                        "type-and-field-based",
+                        "type-and-theField-based",
                         new ConvertTypeTraits<TypeAndFieldBasedArtifactKey, ValueTuple<ArtifactType, Type, string>>
                         (
                             a => (a.ArtifactType, a.Type, a.Field),

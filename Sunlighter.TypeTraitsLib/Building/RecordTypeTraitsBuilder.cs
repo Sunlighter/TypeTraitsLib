@@ -49,7 +49,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             }
             else
             {
-                throw new InvalidOperationException($"Member {mi.Name} is not a property or field");
+                throw new InvalidOperationException($"Member {mi.Name} is not a property or theField");
             }
         }
 
