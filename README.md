@@ -1,4 +1,4 @@
-﻿<!-- -*- coding: utf-8; fill-column: 118 -*- -->
+<!-- -*- coding: utf-8; fill-column: 118 -*- -->
 
 # TypeTraitsLib
 
@@ -144,3 +144,8 @@ but would probably not be used by normal tests or by the code being tested.
 The traits classes, as currently written, will not be able to work with types where the assembly cannot be uniquely
 identified. This means not only that you can&rsquo;t create traits for these types, but that you can&rsquo;t use the
 `Type` objects as keys in dictionaries.
+
+New in Version 2.0 is a static function `AssemblyTypeTraits.IsDuplicate` which takes an assembly and checks to see if
+it is a duplicate. There is also `TypeTypeTraits.IsDuplicateAssembly`. Note that if you dynamically load an assembly,
+this might change whether an assembly is a duplicate, but the Assembly Type Traits will not detect this until it
+receives the new Assembly object.

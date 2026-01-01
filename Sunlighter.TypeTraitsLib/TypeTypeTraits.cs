@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace Sunlighter.TypeTraitsLib
@@ -14,6 +15,20 @@ namespace Sunlighter.TypeTraitsLib
         private static (ImmutableSortedDictionary<string, Assembly>, ImmutableSortedDictionary<string, ImmutableList<Assembly>>) GetAssembliesByName()
         {
             Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            Dictionary<Assembly, int> indexes = new Dictionary<Assembly, int>(ReferenceEqualityComparer.Instance);
+            foreach(int i in Enumerable.Range(0, allAssemblies.Length))
+            {
+                Assembly a = allAssemblies[i];
+                if (indexes.TryGetValue(a, out int oldIndex))
+                {
+                    System.Diagnostics.Debug.WriteLine($"Warning: Assembly {a.FullName} appears at indexes {oldIndex} and {i}.");
+                }
+                else
+                {
+                    indexes[allAssemblies[i]] = i;
+                }
+            }
 
             ImmutableSortedDictionary<string, ImmutableList<Assembly>> duplicates =
                 ImmutableSortedDictionary<string, ImmutableList<Assembly>>.Empty;
@@ -53,7 +68,7 @@ namespace Sunlighter.TypeTraitsLib
                     System.Diagnostics.Debug.WriteLine($"  {kvp.Key}:");
                     foreach (Assembly a in kvp.Value)
                     {
-                        System.Diagnostics.Debug.WriteLine($"    {a.Location}");
+                        System.Diagnostics.Debug.WriteLine($"    {a.Location} [{indexes[a]}]");
                     }
                 }
             }
@@ -244,4 +259,28 @@ namespace Sunlighter.TypeTraitsLib
             return AssemblyTypeTraits.IsDuplicate(t.Assembly);
         }
     }
+
+#if NETSTANDARD2_0
+    internal sealed class ReferenceEqualityComparer : IEqualityComparer<object>
+    {
+        public static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
+
+        private readonly ObjectIDGenerator oig;
+
+        private ReferenceEqualityComparer()
+        {
+            oig = new ObjectIDGenerator();
+        }
+
+        public new bool Equals(object x, object y)
+        {
+            return object.ReferenceEquals(x, y);
+        }
+
+        public int GetHashCode(object obj)
+        {
+            return oig.GetId(obj, out _).GetHashCode();
+        }
+    }
+#endif
 }
