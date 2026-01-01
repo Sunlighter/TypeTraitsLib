@@ -518,6 +518,61 @@ namespace Sunlighter.TypeTraitsLib.Building
             return measureBytesFuncExpr.Compile();
         }
 
+        private static object BuildCloneFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
+        {
+            Type cloneFuncType = typeof(Func<,,>).MakeGenericType(typeof(CloneTracker), t, t);
+
+            ParameterExpression pCloneTracker = LinqExpression.Parameter(typeof(CloneTracker), "tracker");
+            ParameterExpression pA = LinqExpression.Parameter(t, "a");
+
+            ImmutableSortedDictionary<string, Type> typeTraitsType =
+                info.ConstructorBindings.Select(s => new KeyValuePair<string, Type>(s, typeof(ITypeTraits<>).MakeGenericType(info.BindingTypes[s]))).ToImmutableSortedDictionary();
+
+            Func<string, KeyValuePair<string, MethodInfo>> getCloneMethod = delegate (string s)
+            {
+                Type bindingType = info.BindingTypes[s];
+                return new KeyValuePair<string, MethodInfo>
+                (
+                    s,
+                    typeTraitsType[s].GetRequiredMethod
+                    (
+                        "Clone",
+                        BindingFlags.Public | BindingFlags.Instance,
+                        new Type[] { typeof(CloneTracker), bindingType }
+                    )
+                );
+            };
+
+            ImmutableSortedDictionary<string, MethodInfo> cloneMethod =
+                info.ConstructorBindings.Select(getCloneMethod).ToImmutableSortedDictionary();
+
+            LinqLambdaExpression cloneFuncExpr = LinqExpression.Lambda
+            (
+                cloneFuncType,
+                LinqExpression.New
+                (
+                    info.ConstructorInfo,
+                    ImmutableList<LinqExpression>.Empty.AddRange
+                    (
+                        info.ConstructorBindings.Select
+                        (
+                            s => LinqExpression.Call
+                            (
+                                LinqExpression.Constant(typeTraits[s], typeTraitsType[s]),
+                                cloneMethod[s],
+                                pCloneTracker,
+                                PropertyOrField(pA, info.PropertyBindings[s])
+                            )
+                        )
+                    )
+                ),
+                true,
+                new ParameterExpression[] { pCloneTracker, pA }
+            );
+
+            return cloneFuncExpr.Compile();
+        }
+
         private static object BuildAppendDebugStringFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
         {
             Type appendDebugStringFuncType = typeof(Action<,>).MakeGenericType(typeof(DebugStringBuilder), t);
@@ -735,6 +790,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 Type serializeFuncType = typeof(Action<,>).MakeGenericType(typeof(Serializer), itemType);
                 Type deserializeFuncType = typeof(Func<,>).MakeGenericType(typeof(Deserializer), itemType);
                 Type measureBytesFuncType = typeof(Action<,>).MakeGenericType(typeof(ByteMeasurer), itemType);
+                Type cloneFuncType = typeof(Func<,,>).MakeGenericType(typeof(CloneTracker), itemType, itemType);
                 Type appendDebugStringFuncType = typeof(Action<,>).MakeGenericType(typeof(DebugStringBuilder), itemType);
 
                 object compareFunc = BuildCompareFunc(itemType, info, typeTraitsDict);
@@ -744,16 +800,27 @@ namespace Sunlighter.TypeTraitsLib.Building
                 object serializeFunc = BuildSerializeFunc(itemType, info, typeTraitsDict);
                 object deserializeFunc = BuildDeserializeFunc(itemType, info, typeTraitsDict);
                 object measureBytesFunc = BuildMeasureBytesFunc(itemType, info, typeTraitsDict);
+                object cloneFunc = BuildCloneFunc(itemType, info, typeTraitsDict);
                 object appendDebugStringFunc = BuildAppendDebugStringFunc(itemType, info, typeTraitsDict);
 
                 ConstructorInfo ci = typeTraitsType.GetRequiredConstructor
                 (
-                    new Type[] { compareFuncType, addToHashFuncType, checkAnalogousFuncType, canSerializeFuncType, serializeFuncType, deserializeFuncType, measureBytesFuncType, appendDebugStringFuncType }
+                    new Type[]
+                    {
+                        compareFuncType, addToHashFuncType, checkAnalogousFuncType, canSerializeFuncType,
+                        serializeFuncType, deserializeFuncType, measureBytesFuncType, cloneFuncType,
+                        appendDebugStringFuncType
+                    }
                 );
 
                 return ci.Invoke
                 (
-                    new object[] { compareFunc, addToHashFunc, checkAnalogousFunc, canSerializeFunc, serializeFunc, deserializeFunc, measureBytesFunc, appendDebugStringFunc }
+                    new object[]
+                    {
+                        compareFunc, addToHashFunc, checkAnalogousFunc, canSerializeFunc,
+                        serializeFunc, deserializeFunc, measureBytesFunc, cloneFunc,
+                        appendDebugStringFunc
+                    }
                 );
             }
         }

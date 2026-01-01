@@ -24,6 +24,7 @@ namespace Sunlighter.TypeTraitsLib
         void Serialize(Serializer dest, T a);
         T Deserialize(Deserializer src);
         void MeasureBytes(ByteMeasurer measurer, T a);
+        T Clone(CloneTracker tracker, T a);
 
         void AppendDebugString(DebugStringBuilder sb, T a);
     }
@@ -139,6 +140,14 @@ namespace Sunlighter.TypeTraitsLib
                 traits.AddToHash(hb, a);
                 return hb.Result;
             }
+        }
+
+        public static T Clone<T>(this ITypeTraits<T> traits, T a)
+        {
+            CloneTracker tracker = new CloneTracker();
+            T result = traits.Clone(tracker, a);
+            tracker.RunQueue();
+            return result;
         }
 
         public static string ToDebugString<T>(this ITypeTraits<T> traits, T a)
@@ -318,6 +327,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes((long)lenlen + len);
         }
 
+        public string Clone(CloneTracker tracker, string a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, string a)
         {
             sb.Builder.AppendQuoted(a);
@@ -364,6 +375,8 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(2L);
         }
+
+        public char Clone(CloneTracker tracker, char a) => a;
 
         public void AppendDebugString(DebugStringBuilder sb, char a)
         {
@@ -412,6 +425,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(1L);
         }
 
+        public byte Clone(CloneTracker tracker, byte a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, byte a)
         {
             sb.Builder.Append(a);
@@ -458,6 +473,8 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(1L);
         }
+
+        public sbyte Clone(CloneTracker tracker, sbyte a) => a;
 
         public void AppendDebugString(DebugStringBuilder sb, sbyte a)
         {
@@ -506,6 +523,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(2L);
         }
 
+        public short Clone(CloneTracker tracker, short a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, short a)
         {
             sb.Builder.Append(a);
@@ -552,6 +571,8 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(2L);
         }
+
+        public ushort Clone(CloneTracker tracker, ushort a) => a;
 
         public void AppendDebugString(DebugStringBuilder sb, ushort a)
         {
@@ -600,6 +621,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(4L);
         }
 
+        public int Clone(CloneTracker tracker, int a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, int a)
         {
             sb.Builder.Append(a);
@@ -646,6 +669,8 @@ namespace Sunlighter.TypeTraitsLib
         {
              measurer.AddBytes(4L);
         }
+
+        public uint Clone(CloneTracker tracker, uint a) => a;
 
         public void AppendDebugString(DebugStringBuilder sb, uint a)
         {
@@ -694,6 +719,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(8L);
         }
 
+        public long Clone(CloneTracker tracker, long a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, long a)
         {
             sb.Builder.Append(a);
@@ -740,6 +767,8 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(8L);
         }
+
+        public ulong Clone(CloneTracker tracker, ulong a) => a;
 
         public void AppendDebugString(DebugStringBuilder sb, ulong a)
         {
@@ -850,6 +879,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(4L + a.GetByteCount());
         }
 
+        public BigInteger Clone(CloneTracker tracker, BigInteger a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, BigInteger a)
         {
             sb.Builder.Append(a);
@@ -905,6 +936,13 @@ namespace Sunlighter.TypeTraitsLib
         public void MeasureBytes(ByteMeasurer measurer, byte[] a)
         {
             measurer.AddBytes(4L + a.Length);
+        }
+
+        public byte[] Clone(CloneTracker tracker, byte[] a)
+        {
+            byte[] result = new byte[a.Length];
+            Array.Copy(a, result, a.Length);
+            return result;
         }
 
         public void AppendDebugString(DebugStringBuilder sb, byte[] a)
@@ -976,6 +1014,14 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(length);
         }
 
+        public byte[] Clone(CloneTracker tracker, byte[] a)
+        {
+            if (a.Length != length) throw new ArgumentException($"{nameof(a)} has incorrect length, expected {length}, got {a.Length}");
+            byte[] result = new byte[length];
+            Array.Copy(a, result, length);
+            return result;
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, byte[] a)
         {
             if (a.Length != length) throw new ArgumentException($"{nameof(a)} has incorrect length, expected {length}, got {a.Length}");
@@ -1041,6 +1087,8 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(4L + a.Length);
         }
 
+        public ImmutableArray<byte> Clone(CloneTracker tracker, ImmutableArray<byte> a) => a;
+
         public void AppendDebugString(DebugStringBuilder sb, ImmutableArray<byte> a)
         {
             sb.Builder.Append("(bytes ");
@@ -1089,6 +1137,8 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(1L);
         }
+
+        public bool Clone(CloneTracker tracker, bool a) => a;
 
         public void AppendDebugString(DebugStringBuilder sb, bool a)
         {
@@ -1191,6 +1241,13 @@ namespace Sunlighter.TypeTraitsLib
             return new Tuple<T, U>(item1, item2);
         }
 
+        public Tuple<T, U> Clone(CloneTracker tracker, Tuple<T, U> a)
+        {
+            T item1 = item1Traits.Clone(tracker, a.Item1);
+            U item2 = item2Traits.Clone(tracker, a.Item2);
+            return new Tuple<T, U>(item1, item2);
+        }
+
         public void MeasureBytes(ByteMeasurer measurer, Tuple<T, U> a)
         {
             item1Traits.MeasureBytes(measurer, a.Item1);
@@ -1260,6 +1317,13 @@ namespace Sunlighter.TypeTraitsLib
         {
             item1Traits.MeasureBytes(measurer, a.Item1);
             item2Traits.MeasureBytes(measurer, a.Item2);
+        }
+
+        public (T, U) Clone(CloneTracker tracker, (T, U) a)
+        {
+            T item1 = item1Traits.Clone(tracker, a.Item1);
+            U item2 = item2Traits.Clone(tracker, a.Item2);
+            return (item1, item2);
         }
 
         public void AppendDebugString(DebugStringBuilder sb, (T, U) a)
@@ -1339,6 +1403,14 @@ namespace Sunlighter.TypeTraitsLib
             item3Traits.MeasureBytes(measurer, a.Item3);
         }
 
+        public Tuple<T, U, V> Clone(CloneTracker tracker, Tuple<T, U, V> a)
+        {
+            T item1 = item1Traits.Clone(tracker, a.Item1);
+            U item2 = item2Traits.Clone(tracker, a.Item2);
+            V item3 = item3Traits.Clone(tracker, a.Item3);
+            return new Tuple<T, U, V>(item1, item2, item3);
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, Tuple<T, U, V> a)
         {
             sb.Builder.Append("(tuple3 ");
@@ -1416,6 +1488,14 @@ namespace Sunlighter.TypeTraitsLib
             item1Traits.MeasureBytes(measurer, a.Item1);
             item2Traits.MeasureBytes(measurer, a.Item2);
             item3Traits.MeasureBytes(measurer, a.Item3);
+        }
+
+        public (T, U, V) Clone(CloneTracker tracker, (T, U, V) a)
+        {
+            T item1 = item1Traits.Clone(tracker, a.Item1);
+            U item2 = item2Traits.Clone(tracker, a.Item2);
+            V item3 = item3Traits.Clone(tracker, a.Item3);
+            return (item1, item2, item3);
         }
 
         public void AppendDebugString(DebugStringBuilder sb, (T, U, V) a)
@@ -1513,6 +1593,19 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public Option<T> Clone(CloneTracker tracker, Option<T> a)
+        {
+            if (a.HasValue)
+            {
+                T value = itemTraits.Clone(tracker, a.Value);
+                return Option<T>.Some(value);
+            }
+            else
+            {
+                return Option<T>.None;
+            }
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, Option<T> a)
         {
             if (a.HasValue)
@@ -1573,6 +1666,13 @@ namespace Sunlighter.TypeTraitsLib
             itemTraits.MeasureBytes(measurer, convert(a));
         }
 
+        public T Clone(CloneTracker tracker, T a)
+        {
+            U converted = convert(a);
+            U cloned = itemTraits.Clone(tracker, converted);
+            return convertBack(cloned);
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, T a)
         {
             itemTraits.AppendDebugString(sb, convert(a));
@@ -1628,6 +1728,13 @@ namespace Sunlighter.TypeTraitsLib
         public void MeasureBytes(ByteMeasurer measurer, T a)
         {
             itemTraits.MeasureBytes(measurer, convert(a));
+        }
+
+        public T Clone(CloneTracker tracker, T a)
+        {
+            U converted = convert(a);
+            U cloned = itemTraits.Clone(tracker, converted);
+            return convertBack(cloned);
         }
 
         public void AppendDebugString(DebugStringBuilder sb, T a)
@@ -1712,6 +1819,18 @@ namespace Sunlighter.TypeTraitsLib
             if (isOk(a))
             {
                 itemTraits.MeasureBytes(measurer, a);
+            }
+            else
+            {
+                throw new GuardException($"Guard failed for {typeof(T).FullName}");
+            }
+        }
+
+        public T Clone(CloneTracker tracker, T a)
+        {
+            if (isOk(a))
+            {
+                return itemTraits.Clone(tracker, a);
             }
             else
             {
@@ -1841,6 +1960,18 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public T Clone(CloneTracker tracker, T a)
+        {
+            if (itemTraits == null)
+            {
+                throw new InvalidOperationException($"{nameof(RecursiveTypeTraits<T>)} not set");
+            }
+            else
+            {
+                return itemTraits.Clone(tracker, a);
+            }
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, T a)
         {
             if (itemTraits == null)
@@ -1897,6 +2028,8 @@ namespace Sunlighter.TypeTraitsLib
             // do nothing
         }
 
+        public T Clone(CloneTracker tracker, T a) => value;
+
         public void AppendDebugString(DebugStringBuilder sb, T a)
         {
             sb.Builder.Append("--");
@@ -1945,6 +2078,8 @@ namespace Sunlighter.TypeTraitsLib
         {
             // do nothing
         }
+
+        public T Clone(CloneTracker tracker, T a) => makeValue();
 
         public void AppendDebugString(DebugStringBuilder sb, T a)
         {
@@ -2145,6 +2280,13 @@ namespace Sunlighter.TypeTraitsLib
             cases[ca].Traits.MeasureBytes(measurer, a);
         }
 
+        public T Clone(CloneTracker tracker, T a)
+        {
+            int ca = GetCase(a);
+            if (ca < 0) throw new InvalidOperationException("Unrecognized case");
+            return cases[ca].Traits.Clone(tracker, a);
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, T a)
         {
             int ca = GetCase(a);
@@ -2237,6 +2379,16 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(4L);
             a.ForEach(i => itemTraits.MeasureBytes(measurer, i));
+        }
+
+        public ImmutableList<T> Clone(CloneTracker tracker, ImmutableList<T> a)
+        {
+            ImmutableList<T>.Builder result = ImmutableList<T>.Empty.ToBuilder();
+            foreach (T item in a)
+            {
+                result.Add(itemTraits.Clone(tracker, item));
+            }
+            return result.ToImmutable();
         }
 
         public void AppendDebugString(DebugStringBuilder sb, ImmutableList<T> a)
@@ -2358,6 +2510,16 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(4L);
             a.ForEach(i => itemTraits.MeasureBytes(measurer, i));
+        }
+
+        public ImmutableSortedSet<T> Clone(CloneTracker tracker, ImmutableSortedSet<T> a)
+        {
+            ImmutableSortedSet<T>.Builder result = empty.ToBuilder();
+            foreach (T item in a)
+            {
+                result.Add(itemTraits.Clone(tracker, item));
+            }
+            return result.ToImmutable();
         }
 
         public void AppendDebugString(DebugStringBuilder sb, ImmutableSortedSet<T> a)
@@ -2499,6 +2661,18 @@ namespace Sunlighter.TypeTraitsLib
         {
             measurer.AddBytes(4L);
             a.ForEach((k, v) => { keyTraits.MeasureBytes(measurer, k); valueTraits.MeasureBytes(measurer, v); });
+        }
+
+        public ImmutableSortedDictionary<K, V> Clone(CloneTracker tracker, ImmutableSortedDictionary<K, V> a)
+        {
+            ImmutableSortedDictionary<K, V>.Builder result = emptyDict.ToBuilder();
+            foreach (KeyValuePair<K, V> kvp in a)
+            {
+                K clonedKey = keyTraits.Clone(tracker, kvp.Key);
+                V clonedValue = valueTraits.Clone(tracker, kvp.Value);
+                result.Add(clonedKey, clonedValue);
+            }
+            return result.ToImmutable();
         }
 
         public void AppendDebugString(DebugStringBuilder sb, ImmutableSortedDictionary<K, V> a)
@@ -2726,6 +2900,51 @@ namespace Sunlighter.TypeTraitsLib
             measurer.AddBytes(4L);
         }
 
+        public sealed class CloneState
+        {
+            private readonly MutableBoxTypeTraits<T, K, V> parent;
+            private ImmutableSortedDictionary<K, T> clonedBoxes;
+
+            public CloneState(MutableBoxTypeTraits<T, K, V> parent)
+            {
+                this.parent = parent;
+                clonedBoxes = ImmutableSortedDictionary<K, T>.Empty.WithComparers(Adapter<K>.Create(parent.boxKeyTraits));
+            }
+
+            public T CloneBox(CloneTracker tracker, T box)
+            {
+                K boxKey = parent.getBoxKey(box);
+#if !NETSTANDARD2_0
+                if (clonedBoxes.TryGetValue(boxKey, out T? clone))
+#else
+                if (clonedBoxes.TryGetValue(boxKey, out T clone))
+#endif
+                {
+                    return clone;
+                }
+                else
+                {
+                    clone = parent.createBox();
+                    clonedBoxes = clonedBoxes.Add(boxKey, clone);
+                    tracker.Enqueue
+                    (
+                        () =>
+                        {
+                            V clonedValue = parent.boxValueTraits.Clone(tracker, parent.getBoxValue(box));
+                            parent.setBoxValue(clone, clonedValue);
+                        }
+                    );
+                    return clone;
+                }
+            }
+        }
+
+        public T Clone(CloneTracker tracker, T a)
+        {
+            CloneState ss = tracker.GetSerializerState(ssid, () => new CloneState(this));
+            return ss.CloneBox(tracker, a);
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, T a)
         {
             SerializationState ss = sb.GetSerializerState(ssid, () => new SerializationState());
@@ -2949,6 +3168,20 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public TRecord Clone(CloneTracker tracker, TRecord a)
+        {
+            TBuilder builder = makeBuilder();
+            foreach (AbstractFieldTypeTraits<TRecord, TBuilder> field in fields)
+            {
+                field.SetFieldInBuilder
+                (
+                    builder,
+                    field.TypeTraits.Clone(tracker, field.GetFieldInRecord(a))
+                );
+            }
+            return makeRecordFromBuilder(builder);
+        }
+
         public void AppendDebugString(DebugStringBuilder sb, TRecord a)
         {
             sb.Builder.Append("(rec");
@@ -3102,11 +3335,13 @@ namespace Sunlighter.TypeTraitsLib
         {
             private readonly GensymTypeTraits<T, TId, TSerializedId> parent;
             private ImmutableSortedDictionary<TSerializedId, T> deserializedIds;
+
             public DeserializationState(GensymTypeTraits<T, TId, TSerializedId> parent)
             {
                 this.parent = parent;
                 deserializedIds = ImmutableSortedDictionary<TSerializedId, T>.Empty.WithComparers(Adapter<TSerializedId>.Create(parent.serializedIdTraits));
             }
+
             public T GetGensym(TSerializedId serializedId)
             {
 #if !NETSTANDARD2_0
@@ -3136,6 +3371,44 @@ namespace Sunlighter.TypeTraitsLib
         public void MeasureBytes(ByteMeasurer measurer, T a)
         {
             idTraits.MeasureBytes(measurer, getId(a));
+        }
+
+        private sealed class CloneState
+        {
+            private readonly GensymTypeTraits<T, TId, TSerializedId> parent;
+            private ImmutableSortedDictionary<TId, T> clones;
+
+            public CloneState(GensymTypeTraits<T, TId, TSerializedId> parent)
+            {
+                this.parent = parent;
+                clones = ImmutableSortedDictionary<TId, T>.Empty.WithComparers(Adapter<TId>.Create(parent.idTraits));
+            }
+
+            public T GetClone(TId id)
+            {
+#if !NETSTANDARD2_0
+                if (clones.TryGetValue(id, out T? clone))
+#else
+                if (clones.TryGetValue(id, out T clone))
+#endif
+                {
+                    return clone;
+                }
+                else
+                {
+                    clone = parent.gensym();
+                    clones = clones.Add(id, clone);
+                    return clone;
+                }
+            }
+        }
+
+        public T Clone(CloneTracker tracker, T a)
+        {
+            CloneState cs = tracker.GetSerializerState(ssid, () => new CloneState(this));
+            TId id = getId(a);
+            T clone = cs.GetClone(id);
+            return clone;
         }
 
         public void AppendDebugString(DebugStringBuilder sb, T a)

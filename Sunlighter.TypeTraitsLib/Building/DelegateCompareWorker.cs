@@ -11,6 +11,7 @@ namespace Sunlighter.TypeTraitsLib.Building
         private readonly Action<Serializer, T> serializeFunc;
         private readonly Func<Deserializer, T> deserializeFunc;
         private readonly Action<ByteMeasurer, T> measureBytesFunc;
+        private readonly Func<CloneTracker, T, T> cloneFunc;
         private readonly Action<DebugStringBuilder, T> appendDebugStringFunc;
 
         public DelegateTypeTraits
@@ -22,6 +23,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             Action<Serializer, T> serializeFunc,
             Func<Deserializer, T> deserializeFunc,
             Action<ByteMeasurer, T> measureBytesFunc,
+            Func<CloneTracker, T, T> cloneFunc,
             Action<DebugStringBuilder, T> appendDebugStringFunc
         )
         {
@@ -32,6 +34,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             this.serializeFunc = serializeFunc;
             this.deserializeFunc = deserializeFunc;
             this.measureBytesFunc = measureBytesFunc;
+            this.cloneFunc = cloneFunc;
             this.appendDebugStringFunc = appendDebugStringFunc;
         }
 
@@ -68,6 +71,11 @@ namespace Sunlighter.TypeTraitsLib.Building
         public void MeasureBytes(ByteMeasurer measurer, T a)
         {
             measureBytesFunc(measurer, a);
+        }
+
+        public T Clone(CloneTracker tracker, T a)
+        {
+            return cloneFunc(tracker, a);
         }
 
         public void AppendDebugString(DebugStringBuilder sb, T a)

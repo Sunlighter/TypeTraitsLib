@@ -224,4 +224,11 @@ namespace Sunlighter.TypeTraitsLib
             queue = queue.Clear();
         }
     }
+
+    public sealed class CloneTracker : SerializerStateManager
+    {
+        public CloneTracker()
+        {
+        }
+    }
 }

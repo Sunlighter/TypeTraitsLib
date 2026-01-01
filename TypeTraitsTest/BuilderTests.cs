@@ -53,6 +53,19 @@ namespace TypeTraitsTest
 
             // but structures should be analogous
             Assert.IsTrue(typeTraits.IsAnalogous(t1, t2));
+
+            // now try cloning...
+            Thingy t3 = typeTraits.Clone(t1);
+            System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t3));
+
+            // cloned boxes aren't the "same"...
+            Assert.IsFalse(typeTraits.Compare(t1, t3) == 0);
+
+            // but structures should be analogous
+            Assert.IsTrue(typeTraits.IsAnalogous(t1, t3));
+
+            // also analogous with serialized / deserialized version
+            Assert.IsTrue(typeTraits.IsAnalogous(t2, t3));
         }
 
         [TestMethod]
