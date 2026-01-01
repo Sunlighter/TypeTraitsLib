@@ -9,9 +9,9 @@ namespace Sunlighter.TypeTraitsLib
 {
     public static class AssemblyTypeTraits
     {
-        private static readonly Lazy<ITypeTraits<Assembly>> typeTraits = new Lazy<ITypeTraits<Assembly>>(GetTypeTraits, LazyThreadSafetyMode.ExecutionAndPublication);
+        private static readonly Lazy<(ITypeTraits<Assembly>, Func<Assembly, bool>)> typeTraits = new Lazy<(ITypeTraits<Assembly>, Func<Assembly, bool>)>(GetTypeTraits, LazyThreadSafetyMode.ExecutionAndPublication);
 
-        private static ImmutableSortedDictionary<string, Assembly> GetAssembliesByName()
+        private static (ImmutableSortedDictionary<string, Assembly>, ImmutableSortedDictionary<string, ImmutableList<Assembly>>) GetAssembliesByName()
         {
             Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
 
@@ -58,15 +58,15 @@ namespace Sunlighter.TypeTraitsLib
                 }
             }
 
-            return results.ToImmutable();
+            return (results.ToImmutable(), duplicates);
         }
 
-        private static ITypeTraits<Assembly> GetTypeTraits()
+        private static (ITypeTraits<Assembly>, Func<Assembly, bool>) GetTypeTraits()
         {
             object syncRoot = new object();
-            ImmutableSortedDictionary<string, Assembly> nameToAssembly = GetAssembliesByName();
+            (ImmutableSortedDictionary<string, Assembly> nameToAssembly, ImmutableSortedDictionary<string, ImmutableList<Assembly>> duplicates) = GetAssembliesByName();
 
-            return new ConvertTypeTraits<Assembly, string>
+            ITypeTraits<Assembly> assemblyTypeTraits = new ConvertTypeTraits<Assembly, string>
             (
                 a => a.FullNameNotNull(),
                 StringTypeTraits.Value,
@@ -80,19 +80,39 @@ namespace Sunlighter.TypeTraitsLib
                         }
                         else
                         {
-                            nameToAssembly = GetAssembliesByName();
+                            (nameToAssembly, duplicates) = GetAssembliesByName();
                             return nameToAssembly[n]; // if it throws, we did what we could
                         }
                     }
                 }
             );
+
+            bool isDuplicate(Assembly a)
+            {
+                lock (syncRoot)
+                {
+                    string name = a.FullNameNotNull();
+                    if (duplicates.ContainsKey(name)) return true;
+                    if (nameToAssembly.ContainsKey(name)) return false;
+
+                    // this is a new assembly -- but it might cause some other assembly to become a duplicate!
+
+                    (nameToAssembly, duplicates) = GetAssembliesByName();
+                    if (duplicates.ContainsKey(name)) return true;
+                    return false;
+                }
+            };
+
+            return (assemblyTypeTraits, isDuplicate);
         }
 
-        public static ITypeTraits<Assembly> Value => typeTraits.Value;
+        public static ITypeTraits<Assembly> Value => typeTraits.Value.Item1;
 
-        private static readonly Lazy<Adapter<Assembly>> adapter = new Lazy<Adapter<Assembly>>(() => Adapter<Assembly>.Create(typeTraits.Value), LazyThreadSafetyMode.ExecutionAndPublication);
+        private static readonly Lazy<Adapter<Assembly>> adapter = new Lazy<Adapter<Assembly>>(() => Adapter<Assembly>.Create(typeTraits.Value.Item1), LazyThreadSafetyMode.ExecutionAndPublication);
 
         public static Adapter<Assembly> Adapter => adapter.Value;
+
+        public static bool IsDuplicate(Assembly a) => typeTraits.Value.Item2(a);
     }
 
     public static class TypeTypeTraits
@@ -218,5 +238,10 @@ namespace Sunlighter.TypeTraitsLib
         private static readonly Lazy<Adapter<Type>> adapter = new Lazy<Adapter<Type>>(() => Adapter<Type>.Create(typeTraits.Value), LazyThreadSafetyMode.ExecutionAndPublication);
 
         public static Adapter<Type> Adapter => adapter.Value;
+
+        public static bool IsDuplicateAssembly(Type t)
+        {
+            return AssemblyTypeTraits.IsDuplicate(t.Assembly);
+        }
     }
 }
