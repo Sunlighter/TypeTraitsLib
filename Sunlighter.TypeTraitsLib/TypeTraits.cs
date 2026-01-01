@@ -2570,61 +2570,41 @@ namespace Sunlighter.TypeTraitsLib
             boxKeyTraits.AddToHash(b, getBoxKey(a));
         }
 
-        private sealed class AnalogyStateTracker
+        private sealed class AnalogyState
         {
             private readonly MutableBoxTypeTraits<T, K, V> parent;
-            private ImmutableSortedSet<(K, K)> encounteredPairs;
+            private ImmutableSortedDictionary<K, K> analogyMapping;
 
-            public AnalogyStateTracker(MutableBoxTypeTraits<T, K, V> parent)
+            public AnalogyState(MutableBoxTypeTraits<T, K, V> parent)
             {
                 this.parent = parent;
 
-                encounteredPairs = ImmutableSortedSet<(K, K)>.Empty.WithComparer
-                (
-                    Adapter<(K, K)>.Create
-                    (
-                        new ValueTupleTypeTraits<K, K>
-                        (
-                            parent.boxKeyTraits,
-                            parent.boxKeyTraits
-                        )
-                    )
-                );
-            }
-
-            private U WithEnforcedOrder<U>(K left, K right, Func<K, K, U> body)
-            {
-                // require left < right
-                K aLeft, aRight;
-                if (parent.boxKeyTraits.Compare(left, right) > 0)
-                {
-                    aLeft = right;
-                    aRight = left;
-                }
-                else
-                {
-                    aLeft = left;
-                    aRight = right;
-                }
-
-                return body(aLeft, aRight);
+                analogyMapping = ImmutableSortedDictionary<K, K>.Empty.WithComparers(Adapter<K>.Create(parent.boxKeyTraits));
             }
 
             public void QueueIfNeeded(AnalogyTracker at, K left, K right, Action a)
             {
-                WithEnforcedOrder<bool>
-                (
-                    left, right,
-                    (aLeft, aRight) =>
+#if !NETSTANDARD2_0
+                if (analogyMapping.TryGetValue(left, out K? existingRight))
+#else
+                if (analogyMapping.TryGetValue(left, out K existingRight))
+#endif
+                {
+                    if (parent.boxKeyTraits.Compare(existingRight, right) == 0)
                     {
-                        if (!encounteredPairs.Contains((aLeft, aRight)))
-                        {
-                            encounteredPairs = encounteredPairs.Add((aLeft, aRight));
-                            at.Enqueue(a);
-                        }
-                        return false;
+                        // already queued; they are analogous
                     }
-                );
+                    else
+                    {
+                        // conflict
+                        at.SetNotAnalogous();
+                    }
+                }
+                else
+                {
+                    analogyMapping = analogyMapping.Add(left, right);
+                    at.Enqueue(a);
+                }
             }
         }
 
@@ -2634,7 +2614,7 @@ namespace Sunlighter.TypeTraitsLib
             {
                 K boxKeyA = getBoxKey(a);
                 K boxKeyB = getBoxKey(b);
-                AnalogyStateTracker stateTracker = at.GetSerializerState(ssid, () => new AnalogyStateTracker(this));
+                AnalogyState stateTracker = at.GetSerializerState(ssid, () => new AnalogyState(this));
 
                 stateTracker.QueueIfNeeded
                 (
@@ -2979,6 +2959,189 @@ namespace Sunlighter.TypeTraitsLib
                 sb.Builder.Append(" = ");
                 field.TypeTraits.AppendDebugString(sb, field.GetFieldInRecord(a));
             }
+            sb.Builder.Append(')');
+        }
+    }
+
+    public sealed class GensymTypeTraits<T, TId, TSerializedId> : ITypeTraits<T>
+#if !NETSTANDARD2_0
+        where TId : notnull
+        where TSerializedId : notnull
+#endif
+    {
+        private readonly SerializerStateID ssid;
+        private readonly Func<T, TId> getId;
+        private readonly Func<T> gensym;
+        private readonly ITypeTraits<TId> idTraits;
+        private readonly ITypeTraits<TSerializedId> serializedIdTraits;
+        private readonly TSerializedId zero;
+        private readonly Func<TSerializedId, TSerializedId> increment;
+
+        public GensymTypeTraits
+        (
+            Func<T, TId> getId,
+            Func<T> gensym,
+            ITypeTraits<TId> idTraits,
+            ITypeTraits<TSerializedId> serializedIdTraits,
+            TSerializedId zero,
+            Func<TSerializedId, TSerializedId> increment
+        )
+        {
+            ssid = SerializerStateID.Next();
+            this.getId = getId;
+            this.gensym = gensym;
+            this.idTraits = idTraits;
+            this.serializedIdTraits = serializedIdTraits;
+            this.zero = zero;
+            this.increment = increment;
+        }
+
+        public int Compare(T a, T b)
+        {
+            return idTraits.Compare(getId(a), getId(b));
+        }
+
+        public void AddToHash(HashBuilder b, T a)
+        {
+            idTraits.AddToHash(b, getId(a));
+        }
+
+        private sealed class AnalogyState
+        {
+            private readonly GensymTypeTraits<T, TId, TSerializedId> parent;
+            private ImmutableSortedDictionary<TId, TId> analogyMapping;
+
+            public AnalogyState(GensymTypeTraits<T, TId, TSerializedId> parent)
+            {
+                this.parent = parent;
+
+                analogyMapping = ImmutableSortedDictionary<TId, TId>.Empty.WithComparers(Adapter<TId>.Create(parent.idTraits));
+            }
+
+            public void CheckAnalogousKeys(AnalogyTracker at, TId left, TId right)
+            {
+#if NET9_0_OR_GREATER
+                if (analogyMapping.TryGetValue(left, out TId? existingRight))
+                {
+#else
+                if (analogyMapping.ContainsKey(left))
+                {
+                    TId existingRight = analogyMapping[left];
+#endif
+                    if (parent.idTraits.Compare(existingRight, right) == 0)
+                    {
+                        // already queued; they are analogous
+                    }
+                    else
+                    {
+                        // conflict
+                        at.SetNotAnalogous();
+                    }
+                }
+                else
+                {
+                    analogyMapping = analogyMapping.Add(left, right);
+                }
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            if (at.IsAnalogous)
+            {
+                TId idA = getId(a);
+                TId idB = getId(b);
+                AnalogyState stateTracker = at.GetSerializerState(ssid, () => new AnalogyState(this));
+
+                stateTracker.CheckAnalogousKeys(at, idA, idB);
+            }
+        }
+
+        public bool CanSerialize(T a) => true;
+
+        private sealed class SerializationState
+        {
+            private readonly GensymTypeTraits<T, TId, TSerializedId> parent;
+            private ImmutableSortedDictionary<TId, TSerializedId> serializedIds;
+            private TSerializedId next;
+
+            public SerializationState(GensymTypeTraits<T, TId, TSerializedId> parent)
+            {
+                this.parent = parent;
+                serializedIds = ImmutableSortedDictionary<TId, TSerializedId>.Empty.WithComparers(Adapter<TId>.Create(parent.idTraits));
+                next = parent.zero;
+            }
+
+            public TSerializedId GetSerializedId(TId id)
+            {
+#if !NETSTANDARD2_0
+                if (serializedIds.TryGetValue(id, out TSerializedId? serializedId))
+#else
+                if (serializedIds.TryGetValue(id, out TSerializedId serializedId))
+#endif
+                {
+                    return serializedId;
+                }
+                else
+                {
+                    serializedId = next;
+                    next = parent.increment(next);
+                    serializedIds = serializedIds.Add(id, serializedId);
+                    return serializedId;
+                }
+            }
+        }
+
+        public void Serialize(Serializer dest, T a)
+        {
+            SerializationState ss = dest.GetSerializerState(ssid, () => new SerializationState(this));
+            serializedIdTraits.Serialize(dest, ss.GetSerializedId(getId(a)));
+        }
+
+        private sealed class DeserializationState
+        {
+            private readonly GensymTypeTraits<T, TId, TSerializedId> parent;
+            private ImmutableSortedDictionary<TSerializedId, T> deserializedIds;
+            public DeserializationState(GensymTypeTraits<T, TId, TSerializedId> parent)
+            {
+                this.parent = parent;
+                deserializedIds = ImmutableSortedDictionary<TSerializedId, T>.Empty.WithComparers(Adapter<TSerializedId>.Create(parent.serializedIdTraits));
+            }
+            public T GetGensym(TSerializedId serializedId)
+            {
+#if !NETSTANDARD2_0
+                if (deserializedIds.TryGetValue(serializedId, out T? existing))
+#else
+                if (deserializedIds.TryGetValue(serializedId, out T existing))
+#endif
+                {
+                    return existing;
+                }
+                else
+                {
+                    T newGensym = parent.gensym();
+                    deserializedIds = deserializedIds.Add(serializedId, newGensym);
+                    return newGensym;
+                }
+            }
+        }
+
+        public T Deserialize(Deserializer src)
+        {
+            DeserializationState ds = src.GetSerializerState(ssid, () => new DeserializationState(this));
+            T result = ds.GetGensym(serializedIdTraits.Deserialize(src));
+            return result;
+        }
+
+        public void MeasureBytes(ByteMeasurer measurer, T a)
+        {
+            idTraits.MeasureBytes(measurer, getId(a));
+        }
+
+        public void AppendDebugString(DebugStringBuilder sb, T a)
+        {
+            sb.Builder.Append("(gensym, id = ");
+            idTraits.AppendDebugString(sb, getId(a));
             sb.Builder.Append(')');
         }
     }
