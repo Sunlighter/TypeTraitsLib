@@ -218,6 +218,72 @@ namespace Sunlighter.TypeTraitsLib.Building
             return addToHashFuncExpr.Compile();
         }
 
+        private static object BuildCheckAnalogousFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
+        {
+            Type checkAnalogousFuncType = typeof(Action<,,>).MakeGenericType(typeof(AnalogyTracker), t, t);
+
+            ParameterExpression pTracker = LinqExpression.Parameter(typeof(AnalogyTracker), "tracker");
+            ParameterExpression pA = LinqExpression.Parameter(t, "a");
+            ParameterExpression pB = LinqExpression.Parameter(t, "b");
+
+            ImmutableSortedDictionary<string, Type> typeTraitsType =
+                info.ConstructorBindings.Select(s => new KeyValuePair<string, Type>(s, typeof(ITypeTraits<>).MakeGenericType(info.BindingTypes[s]))).ToImmutableSortedDictionary();
+
+            Func<string, KeyValuePair<string, MethodInfo>> getCheckAnalogousMethod = delegate (string s)
+            {
+                Type bindingType = info.BindingTypes[s];
+
+                return new KeyValuePair<string, MethodInfo>
+                (
+                    s,
+                    typeTraitsType[s].GetRequiredMethod
+                    (
+                        "CheckAnalogous",
+                        BindingFlags.Public | BindingFlags.Instance,
+                        new Type[] { typeof(AnalogyTracker), bindingType, bindingType }
+                    )
+                );
+            };
+
+            ImmutableSortedDictionary<string, MethodInfo> checkAnalogousMethod =
+                info.ConstructorBindings.Select(getCheckAnalogousMethod).ToImmutableSortedDictionary();
+
+            LinqLambdaExpression checkAnalogousFuncExpr = LinqExpression.Lambda
+            (
+                checkAnalogousFuncType,
+                LinqExpression.IfThen
+                (
+                    LinqExpression.Property
+                    (
+                        pTracker,
+                        nameof(AnalogyTracker.IsAnalogous)
+                    ),
+                    LinqExpression.Block
+                    (
+                        ImmutableList<LinqExpression>.Empty
+                        .AddRange
+                        (
+                            info.ConstructorBindings.Select
+                            (
+                                s => LinqExpression.Call
+                                (
+                                    LinqExpression.Constant(typeTraits[s], typeTraitsType[s]),
+                                    checkAnalogousMethod[s],
+                                    pTracker,
+                                    PropertyOrField(pA, info.PropertyBindings[s]),
+                                    PropertyOrField(pB, info.PropertyBindings[s])
+                                )
+                            )
+                        )
+                    )
+                ),
+                true,
+                new ParameterExpression[] { pTracker, pA, pB }
+            );
+
+            return checkAnalogousFuncExpr.Compile();
+        }
+
         private static object BuildCanSerializeFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
         {
             Type canSerializeFuncType = typeof(Func<,>).MakeGenericType(t, typeof(bool));
@@ -664,6 +730,7 @@ namespace Sunlighter.TypeTraitsLib.Building
 
                 Type compareFuncType = typeof(Func<,,>).MakeGenericType(itemType, itemType, typeof(int));
                 Type addToHashFuncType = typeof(Action<,>).MakeGenericType(typeof(HashBuilder), itemType);
+                Type checkAnalogousFuncType = typeof(Action<,,>).MakeGenericType(typeof(AnalogyTracker), itemType, itemType);
                 Type canSerializeFuncType = typeof(Func<,>).MakeGenericType(itemType, typeof(bool));
                 Type serializeFuncType = typeof(Action<,>).MakeGenericType(typeof(Serializer), itemType);
                 Type deserializeFuncType = typeof(Func<,>).MakeGenericType(typeof(Deserializer), itemType);
@@ -672,6 +739,7 @@ namespace Sunlighter.TypeTraitsLib.Building
 
                 object compareFunc = BuildCompareFunc(itemType, info, typeTraitsDict);
                 object addToHashFunc = BuildAddToHashFunc(itemType, info, typeTraitsDict);
+                object checkAnalogousFunc = BuildCheckAnalogousFunc(itemType, info, typeTraitsDict);
                 object canSerializeFunc = BuildCanSerializeFunc(itemType, info, typeTraitsDict);
                 object serializeFunc = BuildSerializeFunc(itemType, info, typeTraitsDict);
                 object deserializeFunc = BuildDeserializeFunc(itemType, info, typeTraitsDict);
@@ -680,12 +748,12 @@ namespace Sunlighter.TypeTraitsLib.Building
 
                 ConstructorInfo ci = typeTraitsType.GetRequiredConstructor
                 (
-                    new Type[] { compareFuncType, addToHashFuncType, canSerializeFuncType, serializeFuncType, deserializeFuncType, measureBytesFuncType, appendDebugStringFuncType }
+                    new Type[] { compareFuncType, addToHashFuncType, checkAnalogousFuncType, canSerializeFuncType, serializeFuncType, deserializeFuncType, measureBytesFuncType, appendDebugStringFuncType }
                 );
 
                 return ci.Invoke
                 (
-                    new object[] { compareFunc, addToHashFunc, canSerializeFunc, serializeFunc, deserializeFunc, measureBytesFunc, appendDebugStringFunc }
+                    new object[] { compareFunc, addToHashFunc, checkAnalogousFunc, canSerializeFunc, serializeFunc, deserializeFunc, measureBytesFunc, appendDebugStringFunc }
                 );
             }
         }

@@ -50,6 +50,9 @@ namespace TypeTraitsTest
 
             // the deserialized box isn't the "same" box...
             Assert.IsFalse(typeTraits.Compare(t1, t2) == 0);
+
+            // but structures should be analogous
+            Assert.IsTrue(typeTraits.IsAnalogous(t1, t2));
         }
 
         [TestMethod]
