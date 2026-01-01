@@ -86,7 +86,7 @@ namespace Sunlighter.TypeTraitsLib
     public abstract class SerializerStateManager
     {
         private ImmutableSortedDictionary<SerializerStateID, object> serializerStates;
-        private ImmutableList<Action> queue;
+        protected ImmutableList<Action> queue;
 
         protected SerializerStateManager()
         {
@@ -128,7 +128,7 @@ namespace Sunlighter.TypeTraitsLib
             queue = queue.Add(a);
         }
 
-        public void RunQueue()
+        public virtual void RunQueue()
         {
             while (!queue.IsEmpty)
             {
@@ -186,5 +186,42 @@ namespace Sunlighter.TypeTraitsLib
         }
 
         public StringBuilder Builder => sb;
+    }
+
+    public sealed class AnalogyTracker : SerializerStateManager
+    {
+        private bool isAnalogous;
+
+        public AnalogyTracker()
+        {
+            isAnalogous = true;
+        }
+
+        public bool IsAnalogous => isAnalogous;
+
+        public void SetNotAnalogous()
+        {
+            isAnalogous = false;
+        }
+
+        public void RunCheckIfAppropriate(Func<bool> check)
+        {
+            if (isAnalogous)
+            {
+                isAnalogous = check();
+            }
+        }
+
+        public override void RunQueue()
+        {
+            while (!queue.IsEmpty && isAnalogous)
+            {
+                Action a = queue[0];
+                queue = queue.RemoveAt(0);
+                a();
+            }
+
+            queue = queue.Clear();
+        }
     }
 }

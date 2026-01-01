@@ -18,7 +18,8 @@ namespace Sunlighter.TypeTraitsLib
     {
         int Compare(T a, T b);
         void AddToHash(HashBuilder b, T a);
-        
+        void CheckAnalogous(AnalogyTracker tracker, T a, T b);
+
         bool CanSerialize(T a);
         void Serialize(Serializer dest, T a);
         T Deserialize(Deserializer src);
@@ -29,6 +30,13 @@ namespace Sunlighter.TypeTraitsLib
 
     public static partial class Extensions
     {
+        public static bool IsAnalogous<T>(this ITypeTraits<T> traits, T a, T b)
+        {
+            AnalogyTracker at = new AnalogyTracker();
+            traits.CheckAnalogous(at, a, b);
+            return at.IsAnalogous;
+        }
+
         public static byte[] SerializeToBytes<T>(this ITypeTraits<T> traits, T a)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -281,6 +289,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(Encoding.UTF8.GetBytes(a));
         }
 
+        public void CheckAnalogous(AnalogyTracker at, string a, string b)
+        {
+            at.RunCheckIfAppropriate(() => string.Compare(a, b, StringComparison.Ordinal) == 0);
+        }
+
         public bool CanSerialize(string a) => true;
 
         public void Serialize(Serializer dest, string a)
@@ -330,6 +343,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(BitConverter.GetBytes(a));
         }
 
+        public void CheckAnalogous(AnalogyTracker at, char a, char b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
+        }
+
         public bool CanSerialize(char a) => true;
 
         public void Serialize(Serializer dest, char a)
@@ -370,6 +388,11 @@ namespace Sunlighter.TypeTraitsLib
         {
             b.Add(HashToken.Byte);
             b.Add(a);
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, byte a, byte b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
         }
 
         public bool CanSerialize(byte a) => true;
@@ -414,6 +437,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add((byte)a);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, sbyte a, sbyte b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
+        }
+
         public bool CanSerialize(sbyte a) => true;
 
         public void Serialize(Serializer dest, sbyte a)
@@ -454,6 +482,11 @@ namespace Sunlighter.TypeTraitsLib
         {
             b.Add(HashToken.Int16);
             b.Add(BitConverter.GetBytes(a));
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, short a, short b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
         }
 
         public bool CanSerialize(short a) => true;
@@ -498,6 +531,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(BitConverter.GetBytes(a));
         }
 
+        public void CheckAnalogous(AnalogyTracker at, ushort a, ushort b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
+        }
+
         public bool CanSerialize(ushort a) => true;
 
         public void Serialize(Serializer dest, ushort a)
@@ -538,6 +576,11 @@ namespace Sunlighter.TypeTraitsLib
         {
             b.Add(HashToken.Int32);
             b.Add(BitConverter.GetBytes(a));
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, int a, int b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
         }
 
         public bool CanSerialize(int a) => true;
@@ -582,6 +625,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(BitConverter.GetBytes(a));
         }
 
+        public void CheckAnalogous(AnalogyTracker at, uint a, uint b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
+        }
+
         public bool CanSerialize(uint a) => true;
 
         public void Serialize(Serializer dest, uint a)
@@ -624,6 +672,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(BitConverter.GetBytes(a));
         }
 
+        public void CheckAnalogous(AnalogyTracker at, long a, long b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
+        }
+
         public bool CanSerialize(long a) => true;
 
         public void Serialize(Serializer dest, long a)
@@ -664,6 +717,11 @@ namespace Sunlighter.TypeTraitsLib
         {
             b.Add(HashToken.UInt64);
             b.Add(BitConverter.GetBytes(a));
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, ulong a, ulong b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
         }
 
         public bool CanSerialize(ulong a) => true;
@@ -766,6 +824,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(aBytes);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, BigInteger a, BigInteger b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
+        }
+
         public bool CanSerialize(BigInteger a) => true;
 
         public void Serialize(Serializer dest, BigInteger a)
@@ -818,6 +881,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(HashToken.ByteArray);
             b.Add(a.Length);
             b.Add(a);
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, byte[] a, byte[] b)
+        {
+            at.RunCheckIfAppropriate(() => Compare(a, b) == 0);
         }
 
         public bool CanSerialize(byte[] a) => true;
@@ -880,6 +948,13 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(a);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, byte[] a, byte[] b)
+        {
+            if (a.Length != length) throw new ArgumentException($"{nameof(a)} has incorrect length, expected {length}, got {a.Length}");
+            if (b.Length != length) throw new ArgumentException($"{nameof(b)} has incorrect length, expected {length}, got {b.Length}");
+            at.RunCheckIfAppropriate(() => Compare(a, b) == 0);
+        }
+
         public bool CanSerialize(byte[] a) => a.Length == length;
 
         public void Serialize(Serializer dest, byte[] a)
@@ -938,6 +1013,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(a.AsSpan().ToArray());
         }
 
+        public void CheckAnalogous(AnalogyTracker at, ImmutableArray<byte> a, ImmutableArray<byte> b)
+        {
+            at.RunCheckIfAppropriate(() => Compare(a, b) == 0);
+        }
+
         public bool CanSerialize(ImmutableArray<byte> a) => true;
 
         public void Serialize(Serializer dest, ImmutableArray<byte> a)
@@ -986,6 +1066,11 @@ namespace Sunlighter.TypeTraitsLib
         {
             b.Add(HashToken.Boolean);
             b.Add(a ? (byte)1 : (byte)0);
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, bool a, bool b)
+        {
+            at.RunCheckIfAppropriate(() => a == b);
         }
 
         public bool CanSerialize(bool a) => true;
@@ -1082,6 +1167,15 @@ namespace Sunlighter.TypeTraitsLib
             item2Traits.AddToHash(b, a.Item2);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, Tuple<T, U> a, Tuple<T, U> b)
+        {
+            if (at.IsAnalogous)
+            {
+                item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
+            }
+        }
+
         public bool CanSerialize(Tuple<T, U> a) => item1Traits.CanSerialize(a.Item1) && item2Traits.CanSerialize(a.Item2);
 
         public void Serialize(Serializer dest, Tuple<T, U> item)
@@ -1136,6 +1230,15 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(HashToken.Tuple2);
             item1Traits.AddToHash(b, a.Item1);
             item2Traits.AddToHash(b, a.Item2);
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, (T, U) a, (T, U) b)
+        {
+            if (at.IsAnalogous)
+            {
+                item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
+            }
         }
 
         public bool CanSerialize((T, U) a) => item1Traits.CanSerialize(a.Item1) && item2Traits.CanSerialize(a.Item2);
@@ -1197,6 +1300,16 @@ namespace Sunlighter.TypeTraitsLib
             item1Traits.AddToHash(b, a.Item1);
             item2Traits.AddToHash(b, a.Item2);
             item3Traits.AddToHash(b, a.Item3);
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, Tuple<T, U, V> a, Tuple<T, U, V> b)
+        {
+            if (at.IsAnalogous)
+            {
+                item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
+                item3Traits.CheckAnalogous(at, a.Item3, b.Item3);
+            }
         }
 
         public bool CanSerialize(Tuple<T, U, V> a) =>
@@ -1268,6 +1381,16 @@ namespace Sunlighter.TypeTraitsLib
             item3Traits.AddToHash(b, a.Item3);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, (T, U, V) a, (T, U, V) b)
+        {
+            if (at.IsAnalogous)
+            {
+                item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
+                item3Traits.CheckAnalogous(at, a.Item3, b.Item3);
+            }
+        }
+
         public bool CanSerialize((T, U, V) a) =>
             item1Traits.CanSerialize(a.Item1) &&
             item2Traits.CanSerialize(a.Item2) &&
@@ -1334,6 +1457,21 @@ namespace Sunlighter.TypeTraitsLib
             else
             {
                 b.Add((byte)0);
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, Option<T> a, Option<T> b)
+        {
+            if (at.IsAnalogous)
+            {
+                if (a.HasValue && b.HasValue)
+                {
+                    itemTraits.CheckAnalogous(at, a.Value, b.Value);
+                }
+                else if (a.HasValue || b.HasValue)
+                {
+                    at.SetNotAnalogous();
+                }
             }
         }
 
@@ -1413,6 +1551,11 @@ namespace Sunlighter.TypeTraitsLib
             itemTraits.AddToHash(b, convert(a));
         }
 
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            itemTraits.CheckAnalogous(at, convert(a), convert(b));
+        }
+
         public bool CanSerialize(T a) => itemTraits.CanSerialize(convert(a));
 
         public void Serialize(Serializer dest, T a)
@@ -1463,6 +1606,11 @@ namespace Sunlighter.TypeTraitsLib
         public void AddToHash(HashBuilder b, T a)
         {
             itemTraits.AddToHash(b, convert(a));
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            itemTraits.CheckAnalogous(at, convert(a), convert(b));
         }
 
         public bool CanSerialize(T a) => itemTraits.CanSerialize(convert(a));
@@ -1521,6 +1669,18 @@ namespace Sunlighter.TypeTraitsLib
             if (isOk(a))
             {
                 itemTraits.AddToHash(b, a);
+            }
+            else
+            {
+                throw new GuardException($"Guard failed for {typeof(T).FullName}");
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            if (isOk(a) && isOk(b))
+            {
+                itemTraits.CheckAnalogous(at, a, b);
             }
             else
             {
@@ -1621,6 +1781,18 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            if (itemTraits == null)
+            {
+                throw new InvalidOperationException($"{nameof(RecursiveTypeTraits<T>)} not set");
+            }
+            else
+            {
+                itemTraits.CheckAnalogous(at, a, b);
+            }
+        }
+
         public bool CanSerialize(T a)
         {
             if (itemTraits == null)
@@ -1703,6 +1875,11 @@ namespace Sunlighter.TypeTraitsLib
             b.Add(hashToken);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            // do nothing
+        }
+
         public bool CanSerialize(T a) => true;
 
         public void Serialize(Serializer dest, T a)
@@ -1745,6 +1922,11 @@ namespace Sunlighter.TypeTraitsLib
         public void AddToHash(HashBuilder b, T a)
         {
             b.Add(hashToken);
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            // do nothing
         }
 
         public bool CanSerialize(T a) => true;
@@ -1906,6 +2088,26 @@ namespace Sunlighter.TypeTraitsLib
             cases[ca].Traits.AddToHash(b, a);
         }
 
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            if (at.IsAnalogous)
+            {
+                int ca = GetCase(a);
+                int cb = GetCase(b);
+                if (ca < 0 || cb < 0)
+                {
+                    throw new InvalidOperationException("Unrecognized case");
+                }
+                if (ca != cb)
+                {
+                    at.SetNotAnalogous();
+                    return;
+                }
+
+                cases[ca].Traits.CheckAnalogous(at, a, b);
+            }
+        }
+
         public bool CanSerialize(T a)
         {
             int ca = GetCase(a);
@@ -1988,6 +2190,24 @@ namespace Sunlighter.TypeTraitsLib
             foreach (T item in a)
             {
                 itemTraits.AddToHash(b, item);
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, ImmutableList<T> a, ImmutableList<T> b)
+        {
+            if (at.IsAnalogous)
+            {
+                if (a.Count != b.Count)
+                {
+                    at.SetNotAnalogous();
+                    return;
+                }
+
+                for (int i = 0; i < a.Count; ++i)
+                {
+                    itemTraits.CheckAnalogous(at, a[i], b[i]);
+                    if (!at.IsAnalogous) return;
+                }
             }
         }
 
@@ -2084,6 +2304,31 @@ namespace Sunlighter.TypeTraitsLib
             foreach (T item in a)
             {
                 itemTraits.AddToHash(b, item);
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, ImmutableSortedSet<T> a, ImmutableSortedSet<T> b)
+        {
+            if (at.IsAnalogous)
+            {
+                if (a.Count != b.Count)
+                {
+                    at.SetNotAnalogous();
+                    return;
+                }
+
+                ImmutableSortedSet<T> diff = a.SymmetricExcept(b);
+                if (!diff.IsEmpty)
+                {
+                    at.SetNotAnalogous();
+                    return;
+                }
+
+                foreach(int i in Enumerable.Range(0, a.Count))
+                {
+                    itemTraits.CheckAnalogous(at, a[i], b[i]);
+                    if (!at.IsAnalogous) return;
+                }
             }
         }
 
@@ -2205,6 +2450,26 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
+        public void CheckAnalogous(AnalogyTracker at, ImmutableSortedDictionary<K, V> a, ImmutableSortedDictionary<K, V> b)
+        {
+            if (at.IsAnalogous)
+            {
+                ImmutableSortedSet<K> aKeys = emptySet.Union(a.Keys).SymmetricExcept(b.Keys);
+                if (!aKeys.IsEmpty)
+                {
+                    at.SetNotAnalogous();
+                }
+                else
+                {
+                    foreach (K key in a.Keys)
+                    {
+                        valueTraits.CheckAnalogous(at, a[key], b[key]);
+                        if (!at.IsAnalogous) return;
+                    }
+                }
+            }
+        }
+
         public bool CanSerialize(ImmutableSortedDictionary<K, V> a) => a.All(kvp => keyTraits.CanSerialize(kvp.Key) && valueTraits.CanSerialize(kvp.Value));
 
         public void Serialize(Serializer dest, ImmutableSortedDictionary<K, V> a)
@@ -2303,6 +2568,85 @@ namespace Sunlighter.TypeTraitsLib
         {
             // only the box key is used for hashing
             boxKeyTraits.AddToHash(b, getBoxKey(a));
+        }
+
+        private sealed class AnalogyStateTracker
+        {
+            private readonly MutableBoxTypeTraits<T, K, V> parent;
+            private ImmutableSortedSet<(K, K)> encounteredPairs;
+
+            public AnalogyStateTracker(MutableBoxTypeTraits<T, K, V> parent)
+            {
+                this.parent = parent;
+
+                encounteredPairs = ImmutableSortedSet<(K, K)>.Empty.WithComparer
+                (
+                    Adapter<(K, K)>.Create
+                    (
+                        new ValueTupleTypeTraits<K, K>
+                        (
+                            parent.boxKeyTraits,
+                            parent.boxKeyTraits
+                        )
+                    )
+                );
+            }
+
+            private U WithEnforcedOrder<U>(K left, K right, Func<K, K, U> body)
+            {
+                // require left < right
+                K aLeft, aRight;
+                if (parent.boxKeyTraits.Compare(left, right) > 0)
+                {
+                    aLeft = right;
+                    aRight = left;
+                }
+                else
+                {
+                    aLeft = left;
+                    aRight = right;
+                }
+
+                return body(aLeft, aRight);
+            }
+
+            public void QueueIfNeeded(AnalogyTracker at, K left, K right, Action a)
+            {
+                WithEnforcedOrder<bool>
+                (
+                    left, right,
+                    (aLeft, aRight) =>
+                    {
+                        if (!encounteredPairs.Contains((aLeft, aRight)))
+                        {
+                            encounteredPairs = encounteredPairs.Add((aLeft, aRight));
+                            at.Enqueue(a);
+                        }
+                        return false;
+                    }
+                );
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, T a, T b)
+        {
+            if (at.IsAnalogous)
+            {
+                K boxKeyA = getBoxKey(a);
+                K boxKeyB = getBoxKey(b);
+                AnalogyStateTracker stateTracker = at.GetSerializerState(ssid, () => new AnalogyStateTracker(this));
+
+                stateTracker.QueueIfNeeded
+                (
+                    at,
+                    boxKeyA,
+                    boxKeyB,
+                    () =>
+                    {
+                        boxValueTraits.CheckAnalogous(at, getBoxValue(a), getBoxValue(b));
+                    }
+                );
+            }
         }
 
         public bool CanSerialize(T a)
@@ -2574,6 +2918,18 @@ namespace Sunlighter.TypeTraitsLib
             foreach(AbstractFieldTypeTraits<TRecord, TBuilder> field in fields)
             {
                 field.TypeTraits.AddToHash(b, field.GetFieldInRecord(a));
+            }
+        }
+
+        public void CheckAnalogous(AnalogyTracker at, TRecord a, TRecord b)
+        {
+            if (at.IsAnalogous)
+            {
+                foreach (AbstractFieldTypeTraits<TRecord, TBuilder> field in fields)
+                {
+                    field.TypeTraits.CheckAnalogous(at, field.GetFieldInRecord(a), field.GetFieldInRecord(b));
+                    if (!at.IsAnalogous) return;
+                }
             }
         }
 
