@@ -45,7 +45,7 @@ namespace TypeTraitsTest
 
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
 
-            Assert.IsTrue(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreEqual(0, typeTraits.Compare(t1, t2));
         }
 
         [TestMethod]
@@ -72,7 +72,7 @@ namespace TypeTraitsTest
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
             GenericThingy<DateTime> t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
-            Assert.IsTrue(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreEqual(0, typeTraits.Compare(t1, t2));
 
             Assert.IsFalse(typeTraits.CanSerialize(new Troublemaker<DateTime, ImmutableList<string>>(DateTime.Now, [ "abc" ])));
         }
@@ -85,21 +85,21 @@ namespace TypeTraitsTest
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
             TwoGenericArguments<string, double> t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
-            Assert.IsTrue(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreEqual(0, typeTraits.Compare(t1, t2));
 
             ITypeTraits<TwoGenericArguments<double, string>> typeTraits2 = Builder.Instance.GetTypeTraits<TwoGenericArguments<double, string>>();
             TwoGenericArguments<double, string> t3 = new Example1<double, string>(100.0, "ghi");
             byte[] serializedBytes2 = typeTraits2.SerializeToBytes(t3);
             TwoGenericArguments<double, string> t4 = typeTraits2.DeserializeFromBytes(serializedBytes2);
             System.Diagnostics.Debug.WriteLine(typeTraits2.ToDebugString(t4));
-            Assert.IsTrue(typeTraits2.Compare(t3, t4) == 0);
+            Assert.AreEqual(0, typeTraits2.Compare(t3, t4));
 
             ITypeTraits<TwoGenericArguments<float, int>> typeTraits3 = Builder.Instance.GetTypeTraits<TwoGenericArguments<float, int>>();
             TwoGenericArguments<float, int> t5 = new Example2<float>(100.0f);
             byte[] serializedBytes3 = typeTraits3.SerializeToBytes(t5);
             TwoGenericArguments<float, int> t6 = typeTraits3.DeserializeFromBytes(serializedBytes3);
             System.Diagnostics.Debug.WriteLine(typeTraits3.ToDebugString(t6));
-            Assert.IsTrue(typeTraits3.Compare(t5, t6) == 0);
+            Assert.AreEqual(0, typeTraits3.Compare(t5, t6));
         }
     }
 

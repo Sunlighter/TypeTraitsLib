@@ -25,7 +25,7 @@ namespace TypeTraitsTest
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
             Thingy t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
-            Assert.IsTrue(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreEqual(0, typeTraits.Compare(t1, t2));
         }
 
         [TestMethod]
@@ -52,7 +52,7 @@ namespace TypeTraitsTest
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
 
             // the deserialized box isn't the "same" box...
-            Assert.IsFalse(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreNotEqual(0, typeTraits.Compare(t1, t2));
 
             // but structures should be analogous
             Assert.IsTrue(typeTraits.IsAnalogous(t1, t2));
@@ -62,7 +62,7 @@ namespace TypeTraitsTest
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t3));
 
             // cloned boxes aren't the "same"...
-            Assert.IsFalse(typeTraits.Compare(t1, t3) == 0);
+            Assert.AreNotEqual(0, typeTraits.Compare(t1, t3));
 
             // but structures should be analogous
             Assert.IsTrue(typeTraits.IsAnalogous(t1, t3));
@@ -79,7 +79,7 @@ namespace TypeTraitsTest
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
             var t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
-            Assert.IsTrue(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreEqual(0, typeTraits.Compare(t1, t2));
         }
 
         [TestMethod]
@@ -90,7 +90,7 @@ namespace TypeTraitsTest
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
             var t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
-            Assert.IsTrue(typeTraits.Compare(t1, t2) == 0);
+            Assert.AreEqual(0, typeTraits.Compare(t1, t2));
         }
     }
 
