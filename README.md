@@ -314,7 +314,7 @@ one-for-one.
 
 The `UnionTypeTraits<TTag, T>` class is designed for types which can be defined as a union of other types. The most
 common case in C# is an abstract class with a set of descendants, but it is sometimes possible to regard other types
-as unions.1 The `TTag` type is used in serialization to identify the union case.
+as unions. The `TTag` type is used in serialization to identify the union case.
 
 A `UnionTypeTraits<TTag, T>` instance is constructed with (among other things) a list of union cases. Each case must
 include a tag and a case trait. A case trait is an instance of `IUnionCaseTypeTraits<TTag, T>`, which can be either of
