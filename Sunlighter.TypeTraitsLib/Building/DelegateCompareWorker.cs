@@ -7,7 +7,7 @@ namespace Sunlighter.TypeTraitsLib.Building
         private readonly Func<T, T, int> compareFunc;
         private readonly Action<HashBuilder, T> addToHashFunc;
         private readonly Action<AnalogyTracker, T, T> checkAnalogousFunc;
-        private readonly Func<T, bool> canSerializeFunc;
+        private readonly Action<SerializabilityTracker, T> checkSerializabilityFunc;
         private readonly Action<Serializer, T> serializeFunc;
         private readonly Func<Deserializer, T> deserializeFunc;
         private readonly Action<ByteMeasurer, T> measureBytesFunc;
@@ -19,7 +19,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             Func<T, T, int> compareFunc,
             Action<HashBuilder, T> addToHashFunc,
             Action<AnalogyTracker, T, T> checkAnalogousFunc,
-            Func<T, bool> canSerializeFunc,
+            Action<SerializabilityTracker, T> checkSerializabilityFunc,
             Action<Serializer, T> serializeFunc,
             Func<Deserializer, T> deserializeFunc,
             Action<ByteMeasurer, T> measureBytesFunc,
@@ -30,7 +30,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             this.compareFunc = compareFunc;
             this.addToHashFunc = addToHashFunc;
             this.checkAnalogousFunc = checkAnalogousFunc;
-            this.canSerializeFunc = canSerializeFunc;
+            this.checkSerializabilityFunc = checkSerializabilityFunc;
             this.serializeFunc = serializeFunc;
             this.deserializeFunc = deserializeFunc;
             this.measureBytesFunc = measureBytesFunc;
@@ -53,9 +53,9 @@ namespace Sunlighter.TypeTraitsLib.Building
             checkAnalogousFunc(tracker, a, b);
         }
 
-        public bool CanSerialize(T a)
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
         {
-            return canSerializeFunc(a);
+            checkSerializabilityFunc(tracker, a);
         }
 
         public void Serialize(Serializer dest, T a)

@@ -20,7 +20,7 @@ namespace Sunlighter.TypeTraitsLib
         void AddToHash(HashBuilder b, T a);
         void CheckAnalogous(AnalogyTracker tracker, T a, T b);
 
-        bool CanSerialize(T a);
+        void CheckSerializability(SerializabilityTracker tracker, T a);
         void Serialize(Serializer dest, T a);
         T Deserialize(Deserializer src);
         void MeasureBytes(ByteMeasurer measurer, T a);
@@ -31,6 +31,14 @@ namespace Sunlighter.TypeTraitsLib
 
     public static partial class Extensions
     {
+        public static bool CanSerialize<T>(this ITypeTraits<T> traits, T a)
+        {
+            SerializabilityTracker st = new SerializabilityTracker();
+            traits.CheckSerializability(st, a);
+            st.RunQueue();
+            return st.CanSerialize;
+        }
+
         public static bool IsAnalogous<T>(this ITypeTraits<T> traits, T a, T b)
         {
             AnalogyTracker at = new AnalogyTracker();
@@ -303,7 +311,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => string.Compare(a, b, StringComparison.Ordinal) == 0);
         }
 
-        public bool CanSerialize(string a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, string a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, string a)
         {
@@ -359,7 +370,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(char a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, char a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, char a)
         {
@@ -408,7 +422,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(byte a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, byte a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, byte a)
         {
@@ -457,7 +474,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(sbyte a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, sbyte a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, sbyte a)
         {
@@ -506,7 +526,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(short a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, short a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, short a)
         {
@@ -555,7 +578,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(ushort a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, ushort a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, ushort a)
         {
@@ -604,7 +630,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(int a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, int a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, int a)
         {
@@ -653,7 +682,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(uint a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, uint a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, uint a)
         {
@@ -702,7 +734,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(long a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, long a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, long a)
         {
@@ -751,7 +786,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(ulong a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, ulong a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, ulong a)
         {
@@ -858,7 +896,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(BigInteger a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, BigInteger a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, BigInteger a)
         {
@@ -919,7 +960,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => Compare(a, b) == 0);
         }
 
-        public bool CanSerialize(byte[] a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, byte[] a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, byte[] a)
         {
@@ -993,7 +1037,13 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => Compare(a, b) == 0);
         }
 
-        public bool CanSerialize(byte[] a) => a.Length == length;
+        public void CheckSerializability(SerializabilityTracker tracker, byte[] a)
+        {
+            if (a.Length != length)
+            {
+                tracker.SetNonSerializable();
+            }
+        }
 
         public void Serialize(Serializer dest, byte[] a)
         {
@@ -1064,7 +1114,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => Compare(a, b) == 0);
         }
 
-        public bool CanSerialize(ImmutableArray<byte> a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, ImmutableArray<byte> a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, ImmutableArray<byte> a)
         {
@@ -1121,7 +1174,10 @@ namespace Sunlighter.TypeTraitsLib
             at.RunCheckIfAppropriate(() => a == b);
         }
 
-        public bool CanSerialize(bool a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, bool a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, bool item)
         {
@@ -1222,11 +1278,20 @@ namespace Sunlighter.TypeTraitsLib
             if (at.IsAnalogous)
             {
                 item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                if (!at.IsAnalogous) return;
                 item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
             }
         }
 
-        public bool CanSerialize(Tuple<T, U> a) => item1Traits.CanSerialize(a.Item1) && item2Traits.CanSerialize(a.Item2);
+        public void CheckSerializability(SerializabilityTracker tracker, Tuple<T, U> a)
+        {
+            if (tracker.CanSerialize)
+            {
+                item1Traits.CheckSerializability(tracker, a.Item1);
+                if (!tracker.CanSerialize) return;
+                item2Traits.CheckSerializability(tracker, a.Item2);
+            }
+        }
 
         public void Serialize(Serializer dest, Tuple<T, U> item)
         {
@@ -1294,11 +1359,20 @@ namespace Sunlighter.TypeTraitsLib
             if (at.IsAnalogous)
             {
                 item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                if (!at.IsAnalogous) return;
                 item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
             }
         }
 
-        public bool CanSerialize((T, U) a) => item1Traits.CanSerialize(a.Item1) && item2Traits.CanSerialize(a.Item2);
+        public void CheckSerializability(SerializabilityTracker tracker, (T, U) a)
+        {
+            if (tracker.CanSerialize)
+            {
+                item1Traits.CheckSerializability(tracker, a.Item1);
+                if (!tracker.CanSerialize) return;
+                item2Traits.CheckSerializability(tracker, a.Item2);
+            }
+        }
 
         public void Serialize(Serializer dest, (T, U) item)
         {
@@ -1371,15 +1445,24 @@ namespace Sunlighter.TypeTraitsLib
             if (at.IsAnalogous)
             {
                 item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                if (!at.IsAnalogous) return;
                 item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
+                if (!at.IsAnalogous) return;
                 item3Traits.CheckAnalogous(at, a.Item3, b.Item3);
             }
         }
 
-        public bool CanSerialize(Tuple<T, U, V> a) =>
-            item1Traits.CanSerialize(a.Item1) &&
-            item2Traits.CanSerialize(a.Item2) &&
-            item3Traits.CanSerialize(a.Item3);
+        public void CheckSerializability(SerializabilityTracker tracker, Tuple<T, U, V> a)
+        {
+            if (tracker.CanSerialize)
+            {
+                item1Traits.CheckSerializability(tracker, a.Item1);
+                if (!tracker.CanSerialize) return;
+                item2Traits.CheckSerializability(tracker, a.Item2);
+                if (!tracker.CanSerialize) return;
+                item3Traits.CheckSerializability(tracker, a.Item3);
+            }
+        }
 
         public void Serialize(Serializer dest, Tuple<T, U, V> item)
         {
@@ -1458,15 +1541,24 @@ namespace Sunlighter.TypeTraitsLib
             if (at.IsAnalogous)
             {
                 item1Traits.CheckAnalogous(at, a.Item1, b.Item1);
+                if (!at.IsAnalogous) return;
                 item2Traits.CheckAnalogous(at, a.Item2, b.Item2);
+                if (!at.IsAnalogous) return;
                 item3Traits.CheckAnalogous(at, a.Item3, b.Item3);
             }
         }
 
-        public bool CanSerialize((T, U, V) a) =>
-            item1Traits.CanSerialize(a.Item1) &&
-            item2Traits.CanSerialize(a.Item2) &&
-            item3Traits.CanSerialize(a.Item3);
+        public void CheckSerializability(SerializabilityTracker tracker, (T, U, V) a)
+        {
+            if (tracker.CanSerialize)
+            {
+                item1Traits.CheckSerializability(tracker, a.Item1);
+                if (!tracker.CanSerialize) return;
+                item2Traits.CheckSerializability(tracker, a.Item2);
+                if (!tracker.CanSerialize) return;
+                item3Traits.CheckSerializability(tracker, a.Item3);
+            }
+        }
 
         public void Serialize(Serializer dest, (T, U, V) item)
         {
@@ -1555,7 +1647,13 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(Option<T> a) => !a.HasValue || itemTraits.CanSerialize(a.Value);
+        public void CheckSerializability(SerializabilityTracker tracker, Option<T> a)
+        {
+            if (a.HasValue)
+            {
+                itemTraits.CheckSerializability(tracker, a.Value);
+            }
+        }
 
         public void Serialize(Serializer dest, Option<T> a)
         {
@@ -1649,7 +1747,10 @@ namespace Sunlighter.TypeTraitsLib
             itemTraits.CheckAnalogous(at, convert(a), convert(b));
         }
 
-        public bool CanSerialize(T a) => itemTraits.CanSerialize(convert(a));
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            itemTraits.CheckSerializability(tracker, convert(a));
+        }
 
         public void Serialize(Serializer dest, T a)
         {
@@ -1713,7 +1814,10 @@ namespace Sunlighter.TypeTraitsLib
             itemTraits.CheckAnalogous(at, convert(a), convert(b));
         }
 
-        public bool CanSerialize(T a) => itemTraits.CanSerialize(convert(a));
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            itemTraits.CheckSerializability(tracker, convert(a));
+        }
 
         public void Serialize(Serializer dest, T a)
         {
@@ -1795,7 +1899,17 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(T a) => isOk(a) && itemTraits.CanSerialize(a);
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            if (isOk(a))
+            {
+                itemTraits.CheckSerializability(tracker, a);
+            }
+            else
+            {
+                tracker.SetNonSerializable();
+            }
+        }
 
         public void Serialize(Serializer dest, T a)
         {
@@ -1912,7 +2026,7 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(T a)
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
         {
             if (itemTraits == null)
             {
@@ -1920,7 +2034,7 @@ namespace Sunlighter.TypeTraitsLib
             }
             else
             {
-                return itemTraits.CanSerialize(a);
+                itemTraits.CheckSerializability(tracker, a);
             }
         }
 
@@ -2011,7 +2125,10 @@ namespace Sunlighter.TypeTraitsLib
             // do nothing
         }
 
-        public bool CanSerialize(T a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, T a)
         {
@@ -2062,7 +2179,10 @@ namespace Sunlighter.TypeTraitsLib
             // do nothing
         }
 
-        public bool CanSerialize(T a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            // do nothing; always serializable
+        }
 
         public void Serialize(Serializer dest, T a)
         {
@@ -2243,10 +2363,18 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(T a)
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
         {
-            int ca = GetCase(a);
-            return ca >= 0 && cases[ca].Traits.CanSerialize(a);
+            if (tracker.CanSerialize)
+            {
+                int ca = GetCase(a);
+                if (ca < 0)
+                {
+                    tracker.SetNonSerializable();
+                    return;
+                }
+                cases[ca].Traits.CheckSerializability(tracker, a);
+            }
         }
 
         public void Serialize(Serializer dest, T a)
@@ -2353,8 +2481,17 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(ImmutableList<T> a) => a.All(i => itemTraits.CanSerialize(i));
-
+        public void CheckSerializability(SerializabilityTracker tracker, ImmutableList<T> a)
+        {
+            if (tracker.CanSerialize)
+            {
+                foreach (T item in a)
+                {
+                    itemTraits.CheckSerializability(tracker, item);
+                    if (!tracker.CanSerialize) break;
+                }
+            }
+        }
         public void Serialize(Serializer dest, ImmutableList<T> a)
         {
             dest.Writer.Write(a.Count);
@@ -2469,13 +2606,6 @@ namespace Sunlighter.TypeTraitsLib
                     return;
                 }
 
-                ImmutableSortedSet<T> diff = a.SymmetricExcept(b);
-                if (!diff.IsEmpty)
-                {
-                    at.SetNotAnalogous();
-                    return;
-                }
-
                 foreach(int i in Enumerable.Range(0, a.Count))
                 {
                     itemTraits.CheckAnalogous(at, a[i], b[i]);
@@ -2484,7 +2614,17 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(ImmutableSortedSet<T> a) => a.All(i => itemTraits.CanSerialize(i));
+        public void CheckSerializability(SerializabilityTracker tracker, ImmutableSortedSet<T> a)
+        {
+            if (tracker.CanSerialize)
+            {
+                foreach (T item in a)
+                {
+                    itemTraits.CheckSerializability(tracker, item);
+                    if (!tracker.CanSerialize) break;
+                }
+            }
+        }
 
         public void Serialize(Serializer dest, ImmutableSortedSet<T> a)
         {
@@ -2632,7 +2772,19 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(ImmutableSortedDictionary<K, V> a) => a.All(kvp => keyTraits.CanSerialize(kvp.Key) && valueTraits.CanSerialize(kvp.Value));
+        public void CheckSerializability(SerializabilityTracker tracker, ImmutableSortedDictionary<K, V> a)
+        {
+            if (tracker.CanSerialize)
+            {
+                foreach (KeyValuePair<K, V> kvp in a)
+                {
+                    keyTraits.CheckSerializability(tracker, kvp.Key);
+                    if (!tracker.CanSerialize) break;
+                    valueTraits.CheckSerializability(tracker, kvp.Value);
+                    if (!tracker.CanSerialize) break;
+                }
+            }
+        }
 
         public void Serialize(Serializer dest, ImmutableSortedDictionary<K, V> a)
         {
@@ -2803,11 +2955,43 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(T a)
+        private sealed class SerializabilityState
         {
-            System.Diagnostics.Debug.Assert(boxKeyTraits.CanSerialize(getBoxKey(a)));
+            private readonly MutableBoxTypeTraits<T, K, V> parent;
+            private ImmutableSortedSet<K> pending;
 
-            return boxValueTraits.CanSerialize(getBoxValue(a));
+            public SerializabilityState(MutableBoxTypeTraits<T, K, V> parent)
+            {
+                this.parent = parent;
+                pending = ImmutableSortedSet<K>.Empty.WithComparer(Adapter<K>.Create(parent.boxKeyTraits));
+            }
+
+            public void QueueIfNeeded(SerializabilityTracker tracker, K boxKey, Action a)
+            {
+                if (!pending.Contains(boxKey))
+                {
+                    pending = pending.Add(boxKey);
+                    tracker.Enqueue(a);
+                }
+            }
+        }
+
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            if (tracker.CanSerialize)
+            {
+                K boxKey = getBoxKey(a);
+                SerializabilityState stateTracker = tracker.GetSerializerState(ssid, () => new SerializabilityState(this));
+                stateTracker.QueueIfNeeded
+                (
+                    tracker,
+                    boxKey,
+                    () =>
+                    {
+                        boxValueTraits.CheckSerializability(tracker, getBoxValue(a));
+                    }
+                );
+            }
         }
 
         private sealed class SerializationState
@@ -3132,14 +3316,16 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(TRecord a)
+        public void CheckSerializability(SerializabilityTracker tracker, TRecord a)
         {
-            foreach (AbstractFieldTypeTraits<TRecord, TBuilder> field in fields)
+            if (tracker.CanSerialize)
             {
-                if (!field.TypeTraits.CanSerialize(field.GetFieldInRecord(a))) return false;
+                foreach (AbstractFieldTypeTraits<TRecord, TBuilder> field in fields)
+                {
+                    field.TypeTraits.CheckSerializability(tracker, field.GetFieldInRecord(a));
+                    if (!tracker.CanSerialize) break;
+                }
             }
-
-            return true;
         }
 
         public void Serialize(Serializer dest, TRecord a)
@@ -3290,7 +3476,10 @@ namespace Sunlighter.TypeTraitsLib
             }
         }
 
-        public bool CanSerialize(T a) => true;
+        public void CheckSerializability(SerializabilityTracker tracker, T a)
+        {
+            // do nothing; always serializable
+        }
 
         private sealed class SerializationState
         {

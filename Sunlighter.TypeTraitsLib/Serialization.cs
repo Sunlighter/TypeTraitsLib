@@ -139,6 +139,42 @@ namespace Sunlighter.TypeTraitsLib
         }
     }
 
+    public sealed class SerializabilityTracker : SerializerStateManager
+    {
+        private bool canSerialize;
+
+        public SerializabilityTracker()
+        {
+            canSerialize = true;
+        }
+
+        public bool CanSerialize => canSerialize;
+
+        public void SetNonSerializable()
+        {
+            canSerialize = false;
+        }
+
+        public void RunCheckIfAppropriate(Func<bool> check)
+        {
+            if (canSerialize)
+            {
+                canSerialize = check();
+            }
+        }
+
+        public override void RunQueue()
+        {
+            while (!queue.IsEmpty && canSerialize)
+            {
+                Action a = queue[0];
+                queue = queue.RemoveAt(0);
+                a();
+            }
+            queue = queue.Clear();
+        }
+    }
+
     public sealed class Serializer : SerializerStateManager
     {
         public Serializer(BinaryWriter writer)

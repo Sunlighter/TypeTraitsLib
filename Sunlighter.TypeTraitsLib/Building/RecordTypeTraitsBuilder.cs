@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -284,57 +285,85 @@ namespace Sunlighter.TypeTraitsLib.Building
             return checkAnalogousFuncExpr.Compile();
         }
 
-        private static object BuildCanSerializeFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
+        private static object BuildCheckSerializabilityFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
         {
-            Type canSerializeFuncType = typeof(Func<,>).MakeGenericType(t, typeof(bool));
+            Type checkSerializabilityFuncType = typeof(Action<,>).MakeGenericType(typeof(SerializabilityTracker), t);
 
+            ParameterExpression pTracker = LinqExpression.Parameter(typeof(SerializabilityTracker), "tracker");
             ParameterExpression pA = LinqExpression.Parameter(t, "a");
 
             ImmutableSortedDictionary<string, Type> typeTraitsType =
                 info.ConstructorBindings.Select(s => new KeyValuePair<string, Type>(s, typeof(ITypeTraits<>).MakeGenericType(info.BindingTypes[s]))).ToImmutableSortedDictionary();
 
-            Func<string, KeyValuePair<string, MethodInfo>> getCanSerializeMethod = delegate (string s)
+            Func<string, KeyValuePair<string, MethodInfo>> getCheckSerializabilityMethod = delegate (string s)
             {
                 Type bindingType = info.BindingTypes[s];
-
                 return new KeyValuePair<string, MethodInfo>
                 (
                     s,
-                    typeTraitsType[s].GetRequiredMethod
+                    typeof(ITypeTraits<>).MakeGenericType(bindingType).GetRequiredMethod
                     (
-                        "CanSerialize",
+                        "CheckSerializability",
                         BindingFlags.Public | BindingFlags.Instance,
-                        new Type[] { bindingType }
+                        new Type[] { typeof(SerializabilityTracker), bindingType }
                     )
                 );
             };
 
-            ImmutableSortedDictionary<string, MethodInfo> canSerializeMethod =
-                info.ConstructorBindings.Select(getCanSerializeMethod).ToImmutableSortedDictionary();
+            ImmutableSortedDictionary<string, MethodInfo> checkSerializabilityMethod =
+                info.ConstructorBindings.Select(getCheckSerializabilityMethod).ToImmutableSortedDictionary();
 
-            LinqLambdaExpression canSerializeFuncExpr = LinqExpression.Lambda
+            LabelTarget returnLabel = Expression.Label();
+
+            LinqLambdaExpression checkSerializabilityFuncExpr = LinqExpression.Lambda
             (
-                canSerializeFuncType,
-                AndAlsoAll
+                checkSerializabilityFuncType,
+                LinqExpression.Block
                 (
-                    ImmutableList<LinqExpression>.Empty.AddRange
+                    ImmutableList<LinqExpression>.Empty
+                    .AddRange
                     (
-                        info.ConstructorBindings.Select
+                        info.ConstructorBindings.SelectMany
                         (
-                            s => LinqExpression.Call
+                            s => ImmutableList<LinqExpression>.Empty
+                            .Add
                             (
-                                LinqExpression.Constant(typeTraits[s], typeTraitsType[s]),
-                                canSerializeMethod[s],
-                                PropertyOrField(pA, info.PropertyBindings[s])
+
+                                LinqExpression.Call
+                                (
+                                    LinqExpression.Constant(typeTraits[s], typeTraitsType[s]),
+                                    checkSerializabilityMethod[s],
+                                    pTracker,
+                                    PropertyOrField(pA, info.PropertyBindings[s])
+                                )
+                            )
+                            .Add
+                            (
+                                LinqExpression.IfThen
+                                (
+                                    LinqExpression.IsFalse
+                                    (
+                                        PropertyOrField
+                                        (
+                                            pTracker,
+                                            typeof(SerializabilityTracker).GetRequiredProperty(nameof(SerializabilityTracker.CanSerialize), BindingFlags.Public | BindingFlags.Instance)
+                                        )
+                                    ),
+                                    LinqExpression.Return(returnLabel)
+                                )
                             )
                         )
                     )
+                    .Add
+                    (
+                        LinqExpression.Label(returnLabel)
+                    )
                 ),
                 true,
-                new ParameterExpression[] { pA }
+                new ParameterExpression[] { pTracker, pA }
             );
-
-            return canSerializeFuncExpr.Compile();
+            
+            return checkSerializabilityFuncExpr.Compile();
         }
 
         private static object BuildSerializeFunc(Type t, RecordInfo info, ImmutableSortedDictionary<string, object> typeTraits)
@@ -786,7 +815,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 Type compareFuncType = typeof(Func<,,>).MakeGenericType(itemType, itemType, typeof(int));
                 Type addToHashFuncType = typeof(Action<,>).MakeGenericType(typeof(HashBuilder), itemType);
                 Type checkAnalogousFuncType = typeof(Action<,,>).MakeGenericType(typeof(AnalogyTracker), itemType, itemType);
-                Type canSerializeFuncType = typeof(Func<,>).MakeGenericType(itemType, typeof(bool));
+                Type checkSerializabilityFuncType = typeof(Action<,>).MakeGenericType(typeof(SerializabilityTracker), itemType);
                 Type serializeFuncType = typeof(Action<,>).MakeGenericType(typeof(Serializer), itemType);
                 Type deserializeFuncType = typeof(Func<,>).MakeGenericType(typeof(Deserializer), itemType);
                 Type measureBytesFuncType = typeof(Action<,>).MakeGenericType(typeof(ByteMeasurer), itemType);
@@ -796,7 +825,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 object compareFunc = BuildCompareFunc(itemType, info, typeTraitsDict);
                 object addToHashFunc = BuildAddToHashFunc(itemType, info, typeTraitsDict);
                 object checkAnalogousFunc = BuildCheckAnalogousFunc(itemType, info, typeTraitsDict);
-                object canSerializeFunc = BuildCanSerializeFunc(itemType, info, typeTraitsDict);
+                object checkSerializabilityFunc = BuildCheckSerializabilityFunc(itemType, info, typeTraitsDict);
                 object serializeFunc = BuildSerializeFunc(itemType, info, typeTraitsDict);
                 object deserializeFunc = BuildDeserializeFunc(itemType, info, typeTraitsDict);
                 object measureBytesFunc = BuildMeasureBytesFunc(itemType, info, typeTraitsDict);
@@ -807,7 +836,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 (
                     new Type[]
                     {
-                        compareFuncType, addToHashFuncType, checkAnalogousFuncType, canSerializeFuncType,
+                        compareFuncType, addToHashFuncType, checkAnalogousFuncType, checkSerializabilityFuncType,
                         serializeFuncType, deserializeFuncType, measureBytesFuncType, cloneFuncType,
                         appendDebugStringFuncType
                     }
@@ -817,7 +846,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 (
                     new object[]
                     {
-                        compareFunc, addToHashFunc, checkAnalogousFunc, canSerializeFunc,
+                        compareFunc, addToHashFunc, checkAnalogousFunc, checkSerializabilityFunc,
                         serializeFunc, deserializeFunc, measureBytesFunc, cloneFunc,
                         appendDebugStringFunc
                     }
