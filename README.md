@@ -36,7 +36,7 @@ New in Version 1.1 is a `Builder` class which can automatically construct traits
 given types, including user-defined types with certain attributes. The `Builder` handles recursive types properly and
 makes the library much easier to use.
 
-It can be used like this:
+Just call `Builder.Instance.GetTypeTraits<T>()` or `Builder.Instance.GetAdapter<T>()` like this:
 
 ```csharp
 using Sunlighter.TypeTraitsLib;
@@ -80,12 +80,15 @@ User-defined types must have certain attributes on them in order for traits to b
 A `[Record]` attribute marks user-defined records (which are expected to be immutable). There should be a single
 constructor that takes an argument for every property, and each property should have a `[Bind(...)]` attribute to
 indicate which constructor parameter it goes with. It is also possible to use a `[Bind(...)]` attribute on the
-constructor parameter itself (in case you want to bind under a name different from the parameter&rsquo;s name).
+constructor parameter itself (in case you want to bind under a name different from the parameter&rsquo;s name).  If
+there is more than one constructor, the Builder will favor the constructor that has a `[Bind(...)]` attribute on any
+parameter.
 
-The builder can construct &ldquo;setters&rdquo; for records with immutable properties. (The field name is given by the
-constructor parameter name or the `[Bind(...)]` attribute.) It also works with tuples (where the binding names are
-`item1` and so forth). The &ldquo;setter&rdquo; constructs a new record or tuple, where all the fields are the same
-except for the one that was written.
+The builder can construct &ldquo;setters&rdquo; for records with immutable properties. Just call
+`Builder.Instance.GetSetter<T, U>(string bindingVariable)` where `T` is the record type, `U` is the field type, and
+`bindingVariable` is the field name, which must match a constructor parameter name or a `[Bind(...)]`
+attribute. Setters also work with tuples (where the binding names are `item1` and so forth). The &ldquo;setter&rdquo;
+constructs a new record or tuple, where all the fields are the same except for the one that was written.
 
 A `[Singleton(...)]` attribute can be used to serialize singletons using the `UnitTypeTraits<T>` class. The attribute
 should be given a somewhat unique random `uint` value which will be fed into the `HashBuilder` when the value is
@@ -108,6 +111,12 @@ A `[ProvidesOwnAdapter]` attribute can be used if the class already provides its
 necessary for new classes to do this, but I have some classes with static properties that lazily create adapters from
 their own type traits. The static property should be called `Adapter` and should return an instance of `Adapter<T>`
 where `T` is the type of the class.
+
+A `[GensymInt32]` attribute can be used to indicate that a class is used &ldquo;like a `gensym` in Lisp.&rdquo; This
+will cause the Builder to create a `GensymTypeTraits<T, TId, int>` instance. A class bearing the `[GensymInt32]`
+attribute must have a default constructor and a property called <code>ID</code>. The <code>ID</code> does not have to
+be an `int` but can be any type `TId` for which the `Builder` can construct traits. A dictionary will be used during
+serialization to map `ID` values to `int` values which will be serialized.
 
 The Builder can also construct traits and adapters for tuples and value tuples with up to seven items.
 
@@ -291,7 +300,7 @@ one-for-one.
 
 The `UnionTypeTraits<TTag, T>` class is designed for types which can be defined as a union of other types. The most
 common case in C# is an abstract class with a set of descendants, but it is sometimes possible to regard other types
-as unions.
+as unions.1 The `TTag` type is used in serialization to identify the union case.
 
 A `UnionTypeTraits<TTag, T>` instance is constructed with (among other things) a list of union cases. Each case must
 include a tag and a case trait. A case trait is an instance of `IUnionCaseTypeTraits<TTag, T>`, which can be either of
@@ -370,9 +379,9 @@ members of the type traits class, but they are all extension methods[^4] except 
 
 * `byte[] GetSHA256Hash(T a)` returns the SHA-256 hash of `a`. (32 bytes)
 
-* `T Clone(T a)` [extension method, since 2.0] creates a clone of `a`, which means any mutable boxes and gensyms are
-  replaced according to a one-for-one mapping. The result `IsAnalogous` to `a`. This is similar to serializing and
-  then deserializing `a` but without the intermediate byte array.
+* `T Clone(T a)` [since 2.0] creates a clone of `a`, which means any mutable boxes and gensyms are replaced according
+  to a one-for-one mapping. The result `IsAnalogous` to `a`. This is similar to serializing and then deserializing `a`
+  but without the intermediate byte array.
 
 * `string ToDebugString(T a)` returns a string describing the contents of `a`.
 
