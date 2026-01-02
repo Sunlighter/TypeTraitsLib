@@ -40,7 +40,8 @@ namespace TypeTraitsTest
                     new BigIntThingy(100),
                     NullThingy.Value,
                     new ListThingy([new StringThingy("def")]),
-                    new BoxThingy(box)
+                    new BoxThingy(box),
+                    new Gensym()
                 ]
             );
             box.Value = t1;
@@ -168,5 +169,25 @@ namespace TypeTraitsTest
         private NullThingy() { }
 
         public static NullThingy Value => value;
+    }
+
+    [GensymInt32]
+    public sealed class Gensym : Thingy
+    {
+        private static Lock staticSyncRoot = new Lock();
+        private static int nextId;
+
+        private readonly int id;
+
+        public Gensym()
+        {
+            lock(staticSyncRoot)
+            {
+                id = nextId;
+                ++nextId;
+            }
+        }
+
+        public int ID => id;
     }
 }

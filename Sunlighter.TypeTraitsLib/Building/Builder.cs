@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -429,6 +430,116 @@ namespace Sunlighter.TypeTraitsLib.Building
             }
         }
 
+        private class GensymInt32_TypeTraitsBuilder_Rule : IBuildRule<ArtifactKey, object>
+        {
+            private static readonly Lazy<GensymInt32_TypeTraitsBuilder_Rule> value =
+                new Lazy<GensymInt32_TypeTraitsBuilder_Rule>(() => new GensymInt32_TypeTraitsBuilder_Rule(), LazyThreadSafetyMode.ExecutionAndPublication);
+
+            private GensymInt32_TypeTraitsBuilder_Rule() { }
+
+            public static GensymInt32_TypeTraitsBuilder_Rule Value => value.Value;
+
+            private static Option<PropertyInfo> TryGetIdProperty(Type t)
+            {
+                ImmutableList<PropertyInfo> piArray = t.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.Name == "ID").Take(2).ToImmutableList();
+
+                if (piArray.Count == 1)
+                {
+                    return Option<PropertyInfo>.Some(piArray[0]);
+                }
+                else
+                {
+                    return Option<PropertyInfo>.None;
+                }
+            }
+
+            private static Option<ConstructorInfo> TryGetDefaultConstructor(Type t)
+            {
+#if !NETSTANDARD2_0
+                ConstructorInfo? ci = t.GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, Type.EmptyTypes, null);
+                if (ci is not null)
+#else
+                ConstructorInfo ci = t.GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, Type.EmptyTypes, null);
+                if (ci != null)
+#endif
+                {
+                    return Option<ConstructorInfo>.Some(ci);
+                }
+                else
+                {
+                    return Option<ConstructorInfo>.None;
+                }
+            }
+
+            public bool CanBuild(ArtifactKey k) => k.ArtifactType == ArtifactType.TypeTraits
+                && k.Type.GetCustomAttribute<GensymInt32Attribute>() != null
+                && TryGetIdProperty(k.Type).HasValue
+                && TryGetDefaultConstructor(k.Type).HasValue;
+
+            public ImmutableSortedSet<ArtifactKey> GetPrerequisites(ArtifactKey k)
+            {
+                ImmutableSortedSet<ArtifactKey> prereqs = ImmutableSortedSet<ArtifactKey>.Empty.WithComparer(ArtifactKey.Adapter);
+
+                prereqs = prereqs.Add(ArtifactKey.Create(ArtifactType.TypeTraits, TryGetIdProperty(k.Type).Value.PropertyType));
+
+                return prereqs;
+            }
+
+            public object Build(ArtifactKey k, ImmutableSortedDictionary<ArtifactKey, object> prerequisites)
+            {
+                PropertyInfo idProperty = TryGetIdProperty(k.Type).Value;
+                Type idType = idProperty.PropertyType;
+                Type typeTraitsType = typeof(ITypeTraits<>).MakeGenericType(k.Type);
+                Type idTypeTraitsType = typeof(ITypeTraits<>).MakeGenericType(idType);
+                object idTypeTraits = prerequisites[ArtifactKey.Create(ArtifactType.TypeTraits, idType)];
+                Type resultType = typeof(GensymTypeTraits<,,>).MakeGenericType(new Type[] { k.Type, idType, typeof(int) });
+
+                Type getIdFuncType = typeof(Func<,>).MakeGenericType(k.Type, idType);
+
+                ParameterExpression pGetIdSym = LinqExpression.Parameter(k.Type, "sym");
+
+                Type gensymFuncType = typeof(Func<>).MakeGenericType(k.Type);
+
+                Func<int, int> incrementFunc = x => x + 1;
+
+                object getIdFunc = Expression.Lambda
+                (
+                    getIdFuncType,
+                    LinqExpression.Property
+                    (
+                        pGetIdSym,
+                        idProperty
+                    ),
+                    true,
+                    pGetIdSym
+                )
+                .Compile();
+
+                ConstructorInfo cInfo = TryGetDefaultConstructor(k.Type).Value;
+
+                object gensymFunc = Expression.Lambda
+                (
+                    gensymFuncType,
+                    LinqExpression.New
+                    (
+                        cInfo
+                    ),
+                    true
+                )
+                .Compile();
+
+                ConstructorInfo gensymTypeTraitsCi = resultType.GetRequiredConstructor
+                (
+                    new Type[]
+                    {
+                        getIdFuncType, gensymFuncType, idTypeTraitsType, typeof(ITypeTraits<int>), typeof(int), typeof(Func<int, int>)
+                    }
+                );
+
+                return gensymTypeTraitsCi.Invoke(new object[] { getIdFunc, gensymFunc, idTypeTraits, Int32TypeTraits.Value, 0, incrementFunc });
+            }
+        }
+
         private class SpecialTypeTraits_TypeTraitsBuilder_Rule : IBuildRule<ArtifactKey, object>
         {
             private static readonly Lazy<SpecialTypeTraits_TypeTraitsBuilder_Rule> value =
@@ -821,6 +932,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             return ImmutableList<IBuildRule<ArtifactKey, object>>.Empty
                 .Add(ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule.Value)
                 .Add(ProvidesOwnAdapter_AdapterBuilder_Rule.Value)
+                .Add(GensymInt32_TypeTraitsBuilder_Rule.Value)
                 .Add(SpecialTypeTraits_TypeTraitsBuilder_Rule.Value)
                 .Add(Enum_TypeTraitsBuilder_Rule.Value)
                 .Add(Tuple2_TypeTraitsBuilder_Rule.Value)

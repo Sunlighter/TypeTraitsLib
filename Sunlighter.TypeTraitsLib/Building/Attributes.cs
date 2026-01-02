@@ -73,6 +73,12 @@ namespace Sunlighter.TypeTraitsLib.Building
         public ProvidesOwnAdapterAttribute() { }
     }
 
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public sealed class GensymInt32Attribute : Attribute
+    {
+        public GensymInt32Attribute() { }
+    }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
     public sealed class UseSpecificTraitsAttribute : Attribute
     {
@@ -153,6 +159,14 @@ namespace Sunlighter.TypeTraitsLib.Building
         public uint HashToken => hashToken;
 
         public PropertyInfo SingletonProperty => singletonProperty;
+    }
+
+    public sealed class GensymInfo : RecordOrUnionInfo
+    {
+        public GensymInfo()
+        {
+
+        }
     }
 
     public static partial class Extensions
@@ -379,6 +393,11 @@ namespace Sunlighter.TypeTraitsLib.Building
             }
         }
 
+        private static GensymInfo GetGensymInfo(this Type t)
+        {
+            return new GensymInfo();
+        }
+
         /// <summary>
         /// If closedGeneric is an instantiation of openGeneric, returns a dictionary from the parameters of openGeneric to the arguments of closedGeneric
         /// openGeneric may actually be closed but may have generic parameters from another type, e.g. Special&lt;T&gt; inheriting from Plain&lt;T, int&gt;.
@@ -588,6 +607,10 @@ namespace Sunlighter.TypeTraitsLib.Building
             else if (t.IsDefined(typeof(SingletonAttribute)))
             {
                 return Option<RecordOrUnionInfo>.Some(GetSingletonInfo(t));
+            }
+            else if (t.IsDefined(typeof(GensymInt32Attribute)))
+            {
+                return Option<RecordOrUnionInfo>.Some(GetGensymInfo(t));
             }
             else if (t.IsDefined(typeof(RecordAttribute)))
             {
