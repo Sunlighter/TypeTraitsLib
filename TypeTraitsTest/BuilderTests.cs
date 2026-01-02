@@ -179,6 +179,7 @@ namespace TypeTraitsTest
 
         private readonly int id;
 
+        // required default constructor
         public Gensym()
         {
             lock(staticSyncRoot)
@@ -188,6 +189,7 @@ namespace TypeTraitsTest
             }
         }
 
+        // required property called ID
         public int ID => id;
     }
 }
