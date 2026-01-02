@@ -346,7 +346,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                                         PropertyOrField
                                         (
                                             pTracker,
-                                            typeof(SerializabilityTracker).GetRequiredProperty(nameof(SerializabilityTracker.CanSerialize), BindingFlags.Public | BindingFlags.Instance)
+                                            typeof(SerializabilityTracker).GetRequiredProperty(nameof(SerializabilityTracker.IsSerializable), BindingFlags.Public | BindingFlags.Instance)
                                         )
                                     ),
                                     LinqExpression.Return(returnLabel)

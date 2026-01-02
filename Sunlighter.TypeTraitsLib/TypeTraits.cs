@@ -36,7 +36,7 @@ namespace Sunlighter.TypeTraitsLib
             SerializabilityTracker st = new SerializabilityTracker();
             traits.CheckSerializability(st, a);
             st.RunQueue();
-            return st.CanSerialize;
+            return st.IsSerializable;
         }
 
         public static bool IsAnalogous<T>(this ITypeTraits<T> traits, T a, T b)
@@ -1285,10 +1285,10 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, Tuple<T, U> a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 item1Traits.CheckSerializability(tracker, a.Item1);
-                if (!tracker.CanSerialize) return;
+                if (!tracker.IsSerializable) return;
                 item2Traits.CheckSerializability(tracker, a.Item2);
             }
         }
@@ -1366,10 +1366,10 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, (T, U) a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 item1Traits.CheckSerializability(tracker, a.Item1);
-                if (!tracker.CanSerialize) return;
+                if (!tracker.IsSerializable) return;
                 item2Traits.CheckSerializability(tracker, a.Item2);
             }
         }
@@ -1454,12 +1454,12 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, Tuple<T, U, V> a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 item1Traits.CheckSerializability(tracker, a.Item1);
-                if (!tracker.CanSerialize) return;
+                if (!tracker.IsSerializable) return;
                 item2Traits.CheckSerializability(tracker, a.Item2);
-                if (!tracker.CanSerialize) return;
+                if (!tracker.IsSerializable) return;
                 item3Traits.CheckSerializability(tracker, a.Item3);
             }
         }
@@ -1550,12 +1550,12 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, (T, U, V) a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 item1Traits.CheckSerializability(tracker, a.Item1);
-                if (!tracker.CanSerialize) return;
+                if (!tracker.IsSerializable) return;
                 item2Traits.CheckSerializability(tracker, a.Item2);
-                if (!tracker.CanSerialize) return;
+                if (!tracker.IsSerializable) return;
                 item3Traits.CheckSerializability(tracker, a.Item3);
             }
         }
@@ -1642,7 +1642,7 @@ namespace Sunlighter.TypeTraitsLib
                 }
                 else if (a.HasValue || b.HasValue)
                 {
-                    at.SetNotAnalogous();
+                    at.SetNonAnalogous();
                 }
             }
         }
@@ -2355,7 +2355,7 @@ namespace Sunlighter.TypeTraitsLib
                 }
                 if (ca != cb)
                 {
-                    at.SetNotAnalogous();
+                    at.SetNonAnalogous();
                     return;
                 }
 
@@ -2365,7 +2365,7 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, T a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 int ca = GetCase(a);
                 if (ca < 0)
@@ -2469,7 +2469,7 @@ namespace Sunlighter.TypeTraitsLib
             {
                 if (a.Count != b.Count)
                 {
-                    at.SetNotAnalogous();
+                    at.SetNonAnalogous();
                     return;
                 }
 
@@ -2483,12 +2483,12 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, ImmutableList<T> a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 foreach (T item in a)
                 {
                     itemTraits.CheckSerializability(tracker, item);
-                    if (!tracker.CanSerialize) break;
+                    if (!tracker.IsSerializable) break;
                 }
             }
         }
@@ -2602,7 +2602,7 @@ namespace Sunlighter.TypeTraitsLib
             {
                 if (a.Count != b.Count)
                 {
-                    at.SetNotAnalogous();
+                    at.SetNonAnalogous();
                     return;
                 }
 
@@ -2616,12 +2616,12 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, ImmutableSortedSet<T> a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 foreach (T item in a)
                 {
                     itemTraits.CheckSerializability(tracker, item);
-                    if (!tracker.CanSerialize) break;
+                    if (!tracker.IsSerializable) break;
                 }
             }
         }
@@ -2759,7 +2759,7 @@ namespace Sunlighter.TypeTraitsLib
                 ImmutableSortedSet<K> aKeys = emptySet.Union(a.Keys).SymmetricExcept(b.Keys);
                 if (!aKeys.IsEmpty)
                 {
-                    at.SetNotAnalogous();
+                    at.SetNonAnalogous();
                 }
                 else
                 {
@@ -2774,14 +2774,14 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, ImmutableSortedDictionary<K, V> a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 foreach (KeyValuePair<K, V> kvp in a)
                 {
                     keyTraits.CheckSerializability(tracker, kvp.Key);
-                    if (!tracker.CanSerialize) break;
+                    if (!tracker.IsSerializable) break;
                     valueTraits.CheckSerializability(tracker, kvp.Value);
-                    if (!tracker.CanSerialize) break;
+                    if (!tracker.IsSerializable) break;
                 }
             }
         }
@@ -2923,7 +2923,7 @@ namespace Sunlighter.TypeTraitsLib
                     else
                     {
                         // conflict
-                        at.SetNotAnalogous();
+                        at.SetNonAnalogous();
                     }
                 }
                 else
@@ -2978,7 +2978,7 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, T a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 K boxKey = getBoxKey(a);
                 SerializabilityState stateTracker = tracker.GetSerializerState(ssid, () => new SerializabilityState(this));
@@ -3318,12 +3318,12 @@ namespace Sunlighter.TypeTraitsLib
 
         public void CheckSerializability(SerializabilityTracker tracker, TRecord a)
         {
-            if (tracker.CanSerialize)
+            if (tracker.IsSerializable)
             {
                 foreach (AbstractFieldTypeTraits<TRecord, TBuilder> field in fields)
                 {
                     field.TypeTraits.CheckSerializability(tracker, field.GetFieldInRecord(a));
-                    if (!tracker.CanSerialize) break;
+                    if (!tracker.IsSerializable) break;
                 }
             }
         }
@@ -3454,7 +3454,7 @@ namespace Sunlighter.TypeTraitsLib
                     else
                     {
                         // conflict
-                        at.SetNotAnalogous();
+                        at.SetNonAnalogous();
                     }
                 }
                 else

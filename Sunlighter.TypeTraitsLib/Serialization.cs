@@ -141,31 +141,31 @@ namespace Sunlighter.TypeTraitsLib
 
     public sealed class SerializabilityTracker : SerializerStateManager
     {
-        private bool canSerialize;
+        private bool isSerializable;
 
         public SerializabilityTracker()
         {
-            canSerialize = true;
+            isSerializable = true;
         }
 
-        public bool CanSerialize => canSerialize;
+        public bool IsSerializable => isSerializable;
 
         public void SetNonSerializable()
         {
-            canSerialize = false;
+            isSerializable = false;
         }
 
         public void RunCheckIfAppropriate(Func<bool> check)
         {
-            if (canSerialize)
+            if (isSerializable)
             {
-                canSerialize = check();
+                isSerializable = check();
             }
         }
 
         public override void RunQueue()
         {
-            while (!queue.IsEmpty && canSerialize)
+            while (!queue.IsEmpty && isSerializable)
             {
                 Action a = queue[0];
                 queue = queue.RemoveAt(0);
@@ -235,7 +235,7 @@ namespace Sunlighter.TypeTraitsLib
 
         public bool IsAnalogous => isAnalogous;
 
-        public void SetNotAnalogous()
+        public void SetNonAnalogous()
         {
             isAnalogous = false;
         }
