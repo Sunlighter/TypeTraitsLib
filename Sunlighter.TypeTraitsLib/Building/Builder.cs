@@ -182,7 +182,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 (
                     new UnionCaseTypeTraits2<string, ArtifactKey, TypeAndFieldBasedArtifactKey>
                     (
-                        "type-and-theField-based",
+                        "type-and-field-based",
                         new ConvertTypeTraits<TypeAndFieldBasedArtifactKey, ValueTuple<ArtifactType, Type, string>>
                         (
                             a => (a.ArtifactType, a.Type, a.Field),

@@ -50,7 +50,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             }
             else
             {
-                throw new InvalidOperationException($"Member {mi.Name} is not a property or theField");
+                throw new InvalidOperationException($"Member {mi.Name} is not a property or field");
             }
         }
 
@@ -362,7 +362,7 @@ namespace Sunlighter.TypeTraitsLib.Building
                 true,
                 new ParameterExpression[] { pTracker, pA }
             );
-            
+
             return checkSerializabilityFuncExpr.Compile();
         }
 
