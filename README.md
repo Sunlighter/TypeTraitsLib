@@ -114,9 +114,9 @@ where `T` is the type of the class.
 
 A `[GensymInt32]` attribute can be used to indicate that a class is used &ldquo;like a `gensym` in Lisp.&rdquo; This
 will cause the Builder to create a `GensymTypeTraits<T, TId, int>` instance. A class bearing the `[GensymInt32]`
-attribute must have a default constructor and a property called <code>ID</code>. The <code>ID</code> does not have to
-be an `int` but can be any type `TId` for which the `Builder` can construct traits. A dictionary will be used during
-serialization to map `ID` values to `int` values which will be serialized.
+attribute must have a default constructor and a property called <code>ID</code> (case-sensitive). The <code>ID</code>
+does not have to be an `int` but can be any type `TId` for which the `Builder` can construct traits. A dictionary will
+be used during serialization to map `ID` values to `int` values which will be serialized.
 
 The Builder can also construct traits and adapters for tuples and value tuples with up to seven items.
 
@@ -128,8 +128,7 @@ Although generally designed for immutable types, the library also supports `Stro
 types. Mutable boxes can be used to create circular references, which are serialized correctly but verbosely: the
 library may serialize a second copy of the data before detecting a circular reference, because it has to reach the
 same mutable box again, and does not assign identities to other data. (Note that deserialization creates a new box,
-and since boxes are compared by identity and not by content, the data with the new box will not be equal to the data
-with the old box.)
+and since boxes are compared by identity and not by content, the new box will not be equal to the old box.)
 
 ## Networking
 
@@ -167,6 +166,22 @@ New in Version 2.0 is a static function `AssemblyTypeTraits.IsDuplicate` which t
 it is a duplicate. There is also `TypeTypeTraits.IsDuplicateAssembly`. Note that if you dynamically load an assembly,
 this might change whether an assembly is a duplicate, but the Assembly Type Traits will not detect this until it
 receives the new Assembly object.
+
+## A Note About Immutable Collections
+
+With the exception of mutable boxes, this library makes the assumption that data is immutable, and that it does not
+have an &ldquo;identity&rdquo; separate from its value. (In other words, you cannot change the value of `3`, and it
+doesn&rsquo;t matter which `3` it is.)
+
+With the Immutable Collections, changing a collection returns a new collection, while the old one is untouched.  For
+efficiency reasons, the new collection and the old collection may share storage. (For example, if you change the first
+half of a list, the second half does not change, and can be shared. Since the list is represented as a balanced tree,
+this applies recursively down the tree &mdash; there is always a half that did not change &mdash; and this is why you
+can change a list in logarithmic time.)
+
+This library does not have access to the internal nodes of the immutable collections, and cannot tell if they are
+shared. This has the effect that, if you serialize several lists that share storage, and then deserialize them, the
+deserialized versions will *not* share storage and will take up more memory than the original lists.
 
 # Reference
 
@@ -220,7 +235,8 @@ The `Builder` can build traits for tuples with up to seven items.
 |`TupleTypeTraits<T, U, V>`|`Tuple<T, U, V>`||
 |`ValueTupleTypeTraits<T, U, V>`|`(T, U, V)`||
 
-The following traits classes are for containers. Hash-based sets and dictionaries are not currently supported.
+The following traits classes are for containers. There are currently no plans to support hash-based sets and
+dictionaries.
 
 | Class Name | Type Traits For | Notes |
 |:----|:--------|:----|
@@ -356,8 +372,8 @@ members of the type traits class, but they are all extension methods[^4] except 
   clone of the other, or a serialized and deserialized copy of the other).
 
 * `bool CanSerialize(T a)`[^4] checks to see if `a` is serializable. This function detects fixed-length arrays of the
-  wrong length and unrecognized union cases, without throwing an exception. However, it does not tell you *why* `a`
-  cannot be serialized...
+  wrong length and unrecognized union cases, without throwing an exception. However, if it returns `false` it does not
+  tell you *why* `a` cannot be serialized...
 
 * `byte[] SerializeToBytes(T a)` serializes `a` to bytes.
 
@@ -392,6 +408,8 @@ recommended to use `ConvertTypeTraits<T, U>` to convert the new types to integra
 then use the type traits for those.
 
 If it is necessary to write a new implementation of `ITypeTraits<T>`, the following functions have to be provided.
+
+* `int Compare(T a, T b)` returns -1, 0, or 1.
 
 * `void AddToHash(HashBuilder b, T a)`. Passes important bytes in `a` to `b`. (The keys of mutable boxes are hashed,
   but the values are not. This makes the function non-recursive.)
