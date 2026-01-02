@@ -49,6 +49,10 @@ namespace TypeTraitsTest
             Assert.IsTrue(typeTraits.CanSerialize(t1));
 
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
+
+            // check measuring bytes
+            Assert.AreEqual(serializedBytes.LongLength, typeTraits.MeasureAllBytes(t1));
+
             Thingy t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
 
