@@ -44,6 +44,9 @@ namespace TypeTraitsTest
                 ]
             );
             box.Value = t1;
+
+            Assert.IsTrue(typeTraits.CanSerialize(t1)); // death by recursion?
+
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
             Thingy t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
