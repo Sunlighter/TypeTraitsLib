@@ -481,7 +481,7 @@ namespace Sunlighter.TypeTraitsLib.Building
 
         /// <summary>
         /// If candidateDescendant (an open generic type) can be constructed so that it inherits from closedGenericBase,
-        /// returns a dictionary from the parameters of candidateDescendant to the values needed to close the type.
+        /// returns the closed type.
         /// </summary>
         public static Option<Type> TryUnify(Type closedGenericBase, Type candidateDescendant)
         {
