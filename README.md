@@ -32,7 +32,7 @@ be easily seen or logged. However, there is no corresponding parser.
 
 ## The Type Traits Builder
 
-New in Version 1.1 is a `Builder` class which can automatically construct traits and adapters for a wide variery of
+New in Version 1.1 is a `Builder` class which can automatically construct traits and adapters for a wide variety of
 given types, including user-defined types with certain attributes. The `Builder` handles recursive types properly and
 makes the library much easier to use.
 
@@ -81,8 +81,7 @@ A `[Record]` attribute marks user-defined records (which are expected to be immu
 constructor that takes an argument for every property, and each property should have a `[Bind(...)]` attribute to
 indicate which constructor parameter it goes with. It is also possible to use a `[Bind(...)]` attribute on the
 constructor parameter itself (in case you want to bind under a name different from the parameter&rsquo;s name).  If
-there is more than one constructor, the Builder will favor the constructor that has a `[Bind(...)]` attribute on any
-parameter.
+there is more than one constructor, the Builder will prefer the one where any parameter has a `[Bind(...)]` attribute.
 
 The builder can construct &ldquo;setters&rdquo; for records with immutable properties. Just call
 `Builder.Instance.GetSetter<T, U>(string bindingVariable)` where `T` is the record type, `U` is the field type, and
@@ -91,8 +90,7 @@ attribute. Setters also work with tuples (where the binding names are `item1` an
 constructs a new record or tuple, where all the fields are the same except for the one that was written.
 
 A `[Singleton(...)]` attribute can be used to serialize singletons using the `UnitTypeTraits<T>` class. The attribute
-should be given a somewhat unique random `uint` value which will be fed into the `HashBuilder` when the value is
-encountered.
+should be given a unique random `uint` value which will be fed into the `HashBuilder` when the value is encountered.
 
 A `[UnionOfDescendants]` attribute can be put on an abstract class; this will cause the Builder to create a
 `UnionTypeTraits<T>` instance. All public or nested public classes in the same assembly which inherit from this class
@@ -416,7 +414,7 @@ If it is necessary to write a new implementation of `ITypeTraits<T>`, the follow
 
 There are two descendants of `HashBuilder`, which are `BasicHashBuilder` and `SHA256HashBuilder`.
 
-The remaining functions are recursive and each one receives a specialized descendant of an abstract class called
+The remaining functions are recursive, and each one receives a specialized descendant of an abstract class called
 `SerializerStateManager`. It is not always required for an implementation of `ITypeTraits<T>` to use this object, but
 if it is required, each instance should, in its constructor, call the static function `SerializerStateID.Next()` to
 get a `SerializerStateID`. A `SerializerStateManager` keeps serializer states for all the type traits classes it
