@@ -83,6 +83,7 @@ namespace TypeTraitsTest
             ITypeTraits<TwoGenericArguments<string, double>> typeTraits = Builder.Instance.GetTypeTraits<TwoGenericArguments<string, double>>();
             TwoGenericArguments<string, double> t1 = new Example1<string, double>("abc", 100.0);
             byte[] serializedBytes = typeTraits.SerializeToBytes(t1);
+            Assert.AreEqual(serializedBytes.LongLength, typeTraits.MeasureAllBytes(t1));
             TwoGenericArguments<string, double> t2 = typeTraits.DeserializeFromBytes(serializedBytes);
             System.Diagnostics.Debug.WriteLine(typeTraits.ToDebugString(t2));
             Assert.AreEqual(0, typeTraits.Compare(t1, t2));
@@ -90,6 +91,7 @@ namespace TypeTraitsTest
             ITypeTraits<TwoGenericArguments<double, string>> typeTraits2 = Builder.Instance.GetTypeTraits<TwoGenericArguments<double, string>>();
             TwoGenericArguments<double, string> t3 = new Example1<double, string>(100.0, "ghi");
             byte[] serializedBytes2 = typeTraits2.SerializeToBytes(t3);
+            Assert.AreEqual(serializedBytes2.LongLength, typeTraits2.MeasureAllBytes(t3));
             TwoGenericArguments<double, string> t4 = typeTraits2.DeserializeFromBytes(serializedBytes2);
             System.Diagnostics.Debug.WriteLine(typeTraits2.ToDebugString(t4));
             Assert.AreEqual(0, typeTraits2.Compare(t3, t4));
@@ -97,6 +99,7 @@ namespace TypeTraitsTest
             ITypeTraits<TwoGenericArguments<float, int>> typeTraits3 = Builder.Instance.GetTypeTraits<TwoGenericArguments<float, int>>();
             TwoGenericArguments<float, int> t5 = new Example2<float>(100.0f);
             byte[] serializedBytes3 = typeTraits3.SerializeToBytes(t5);
+            Assert.AreEqual(serializedBytes3.LongLength, typeTraits3.MeasureAllBytes(t5));
             TwoGenericArguments<float, int> t6 = typeTraits3.DeserializeFromBytes(serializedBytes3);
             System.Diagnostics.Debug.WriteLine(typeTraits3.ToDebugString(t6));
             Assert.AreEqual(0, typeTraits3.Compare(t5, t6));
