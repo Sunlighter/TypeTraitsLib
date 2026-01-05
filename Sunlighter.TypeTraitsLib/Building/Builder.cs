@@ -359,7 +359,7 @@ namespace Sunlighter.TypeTraitsLib.Building
         }
 
         /// <summary>
-        /// Currently does not support generic classes.
+        /// Now supports generic classes.
         /// </summary>
         private class ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule : IBuildRule<ArtifactKey, object>
         {
