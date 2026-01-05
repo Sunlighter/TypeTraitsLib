@@ -264,7 +264,7 @@ namespace Sunlighter.TypeTraitsLib.Building
         {
             ImmutableSortedDictionary<ArtifactKey, object> result = ImmutableSortedDictionary<ArtifactKey, object>.Empty.WithComparers(ArtifactKey.Adapter);
 
-#region Add Initial Compare Workers
+            #region Add Initial Compare Workers
 
             foreach (Type t in typeof(ITypeTraits<>).Assembly.GetTypes())
             {
@@ -300,7 +300,7 @@ namespace Sunlighter.TypeTraitsLib.Building
             result = result.Add(ArtifactKey.Create(ArtifactType.TypeTraits, typeof(float)), SingleTypeTraits.Value);
             result = result.Add(ArtifactKey.Create(ArtifactType.TypeTraits, typeof(double)), DoubleTypeTraits.Value);
 
-#endregion
+            #endregion
 
             return result;
         }
