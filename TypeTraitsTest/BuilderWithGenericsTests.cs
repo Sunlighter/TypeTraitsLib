@@ -104,6 +104,19 @@ namespace TypeTraitsTest
             System.Diagnostics.Debug.WriteLine(typeTraits3.ToDebugString(t6));
             Assert.AreEqual(0, typeTraits3.Compare(t5, t6));
         }
+
+        [TestMethod]
+        public void TestGenericProvidesOwnTypeTraits()
+        {
+            ITypeTraits<ProvidesOwnTypeTraitsThingy<int>> typeTraitsInt = Builder.Instance.GetTypeTraits<ProvidesOwnTypeTraitsThingy<int>>();
+
+            Assert.IsNotNull(typeTraitsInt); // it will never be null, but it might throw an exception before reaching this point
+
+            ITypeTraits<ProvidesOwnTypeTraitsThingy<string>> typeTraitsString = Builder.Instance.GetTypeTraits<ProvidesOwnTypeTraitsThingy<string>>();
+
+            Assert.IsNotNull(typeTraitsString); // ditto
+
+        }
     }
 
     [UnionOfDescendants]
@@ -267,5 +280,31 @@ namespace TypeTraitsTest
 
         [Bind("item")]
         public T Item => item;
+    }
+
+    [ProvidesOwnTypeTraits]
+    public sealed class ProvidesOwnTypeTraitsThingy<T>
+    {
+        private readonly T value;
+        private readonly Option<T> maybeSecondValue;
+
+        public ProvidesOwnTypeTraitsThingy(T value, Option<T> maybeSecondValue)
+        {
+            this.value = value;
+            this.maybeSecondValue = maybeSecondValue;
+        }
+
+        public T Value => value;
+        public Option<T> MaybeSecondValue => maybeSecondValue;
+
+        public static ITypeTraits<ProvidesOwnTypeTraitsThingy<T>> GetTypeTraits(ITypeTraits<T> itemTraits)
+        {
+            return new ConvertTypeTraits<ProvidesOwnTypeTraitsThingy<T>, (T, Option<T>)>
+            (
+                p => (p.Value, p.MaybeSecondValue),
+                new ValueTupleTypeTraits<T, Option<T>>(itemTraits, new OptionTypeTraits<T>(itemTraits)),
+                t => new ProvidesOwnTypeTraitsThingy<T>(t.Item1, t.Item2)
+            );
+        }
     }
 }

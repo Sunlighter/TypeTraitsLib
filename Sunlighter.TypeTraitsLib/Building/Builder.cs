@@ -370,26 +370,108 @@ namespace Sunlighter.TypeTraitsLib.Building
 
             public static ProvidesOwnTypeTraits_TypeTraitsBuilder_Rule Value => value.Value;
 
-            public bool CanBuild(ArtifactKey k) => k.ArtifactType == ArtifactType.TypeTraits && k.Type.GetCustomAttribute<ProvidesOwnTypeTraitsAttribute>() != null;
+            private static Option<PropertyInfo> TryGetTypeTraitsProperty(Type t)
+            {
+                Type typeTraitsType = typeof(ITypeTraits<>).MakeGenericType(t);
 
-            public ImmutableSortedSet<ArtifactKey> GetPrerequisites(ArtifactKey k) => ImmutableSortedSet<ArtifactKey>.Empty.WithComparer(ArtifactKey.Adapter);
+                if (t.IsGenericTypeDefinition) return Option<PropertyInfo>.None;
+
+                ImmutableList<PropertyInfo> piArray = t.GetProperties(BindingFlags.Public | BindingFlags.Static)
+                    .Where(p => p.PropertyType == typeTraitsType).Take(2).ToImmutableList();
+
+                if (piArray.Count == 1)
+                {
+                    return Option<PropertyInfo>.Some(piArray[0]);
+                }
+                else
+                {
+                    return Option<PropertyInfo>.None;
+                }
+            }
+
+            private static Option<MethodInfo> TryGetTypeTraitsMethod(Type t)
+            {
+                if (t.IsGenericType)
+                {
+                    Type[] genericArgs = t.GetGenericArguments();
+                    Type[] methodArgs = genericArgs.Select(g => typeof(ITypeTraits<>).MakeGenericType(g)).ToArray();
+
+                    ImmutableList<MethodInfo> miArray = t.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .Where(m => m.GetParameters().Select(p => p.ParameterType).SequenceEqual(methodArgs))
+                        .Take(2)
+                        .ToImmutableList();
+
+                    if (miArray.Count == 1)
+                    {
+                        return Option<MethodInfo>.Some(miArray[0]);
+                    }
+                    else
+                    {
+                        return Option<MethodInfo>.None;
+                    }
+                }
+                else
+                {
+                    return Option<MethodInfo>.None;
+                }
+            }
+
+            public bool CanBuild(ArtifactKey k)
+            {
+                if (k.ArtifactType != ArtifactType.TypeTraits) return false;
+                if (k.Type.GetCustomAttribute<ProvidesOwnTypeTraitsAttribute>() == null) return false;
+
+                if (k.Type.IsGenericType)
+                {
+                    return TryGetTypeTraitsMethod(k.Type).HasValue;
+                }
+                else
+                {
+                    return TryGetTypeTraitsProperty(k.Type).HasValue;
+                }
+            }
+
+            public ImmutableSortedSet<ArtifactKey> GetPrerequisites(ArtifactKey k)
+            {
+                ImmutableSortedSet<ArtifactKey> results = ImmutableSortedSet<ArtifactKey>.Empty.WithComparer(ArtifactKey.Adapter);
+                if (k.Type.IsGenericType)
+                {
+                    Type[] genericArgs = k.Type.GetGenericArguments();
+                    foreach (Type ga in genericArgs)
+                    {
+                        results = results.Add(ArtifactKey.Create(ArtifactType.TypeTraits, ga));
+                    }
+                }
+                return results;
+            }
 
             public object Build(ArtifactKey k, ImmutableSortedDictionary<ArtifactKey, object> prerequisites)
             {
-                Type desiredType = typeof(ITypeTraits<>).MakeGenericType(k.Type);
-#if NETSTANDARD2_0
-                MethodInfo getMethod = k.Type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-#else
-                MethodInfo? getMethod = k.Type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-#endif
-                    .Where(pi => pi.Name == "TypeTraits" && pi.CanRead && pi.PropertyType == desiredType)
-                    .Select(pi => pi.GetGetMethod().AssertNotNull())
-                    .FirstOrDefault();
+                if (k.Type.IsGenericType)
+                {
+                    Type[] genericArgs = k.Type.GetGenericArguments();
+                    Option<MethodInfo> oCreateMethod = TryGetTypeTraitsMethod(k.Type);
+                    MethodInfo createMethod = oCreateMethod.Value;
 
-                if (getMethod == null) throw new BuilderException("TypeTraits property not found on type " + TypeTraitsUtility.GetTypeName(k.Type));
+                    object prerequisiteValue(Type traitsType)
+                    {
+                        if (traitsType.IsGenericType && traitsType.GetGenericTypeDefinition() == typeof(ITypeTraits<>))
+                        {
+                            var x = traitsType.GetGenericArguments()[0];
+                            ArtifactKey prereqKey = ArtifactKey.Create(ArtifactType.TypeTraits, x);
+                            return prerequisites[prereqKey];
+                        }
+                        else throw new InvalidOperationException("Unexpected prerequisite type " + TypeTraitsUtility.GetTypeName(traitsType));
+                    }
+
+                    object[] methodArgs = createMethod.GetParameters().Select(p => prerequisiteValue(p.ParameterType)).ToArray();
+                    return createMethod.Invoke(null, methodArgs).AssertNotNull();
+                }
                 else
                 {
-                    return getMethod.Invoke(null, null).AssertNotNull();
+                    Option<PropertyInfo> oTypeTraitsProperty = TryGetTypeTraitsProperty(k.Type);
+                    PropertyInfo typeTraitsProperty = oTypeTraitsProperty.Value;
+                    return typeTraitsProperty.GetValue(null).AssertNotNull();
                 }
             }
         }
