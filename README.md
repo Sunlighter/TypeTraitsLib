@@ -102,13 +102,17 @@ additional generic parameters (because those would lead to an open-ended number 
 the generic parameter).
 
 A `[ProvidesOwnTypeTraits]` attribute can be put on a class (including an abstract class) indicating that it provides
-its own type traits. The class should have a static property called `TypeTraits` which returns an instance of
-`ITypeTraits<T>` where `T` is the class itself.
+its own type traits. If the class is non-generic, it should have a static property which returns an instance of
+`ITypeTraits<T>` where `T` is the class itself. (It doesn&rsquo;t matter what the name of the property is, but there
+should be only one.) If the class is generic, it should have a static non-generic function which takes one argument of
+type `ITypeTraits<T>` for each of the generic parameters `T` and returns `ITypeTraits<U>` where `U` is the generic
+class itself. (Right now, all the generic parameters have to be used by this function, in the same order that they are
+declared on the class.)
 
 A `[ProvidesOwnAdapter]` attribute can be used if the class already provides its own `Adapter<T>`. It should not be
-necessary for new classes to do this, but I have some classes with static properties that lazily create adapters from
-their own type traits. The static property should be called `Adapter` and should return an instance of `Adapter<T>`
-where `T` is the type of the class.
+necessary for new classes to do this, since the Builder can easily create an adapter if it can create type traits, but
+I have some classes with static properties that lazily create adapters from their own type traits. The static property
+should be called `Adapter` and should return an instance of `Adapter<T>` where `T` is the type of the class.
 
 A `[GensymInt32]` attribute can be used to indicate that a class is used &ldquo;like a `gensym` in Lisp.&rdquo; This
 will cause the Builder to create a `GensymTypeTraits<T, TId, int>` instance. A class bearing the `[GensymInt32]`
